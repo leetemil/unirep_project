@@ -8,23 +8,46 @@
 
 \input{frontpage.tex}
 
+% No page numbering please
+\thispagestyle{empty}
+\tableofcontents
+\clearpage
+\setcounter{page}{1}
+
 \section{Introduction}
+
+Protein engineering is the active field of design and synthesis of proteins. Proteins are essential to many biological industries, including health-related 
+
+Effective usage of machine learning techniques on the domain of protein engineering has long been sought. For many years, protein engineering has suffered from the lack of a holistic understanding of protein structure and function. Recently, advances in deep learning techniques have brought new hope to this endeavor. With advanced techniques from the field of deep representation learning, machine learning systems may be able to learn rich representations of proteins, without a need for manual feature extraction. Such representations could be highly relevant to downstream tasks within protein engineering.
+
+In this report, we examine a recent paper \cite{alley2019unified} (UniRep paper) utilizing deep representation learning on protein sequences. In it, Alley et al. present a novel protein representation learning model. The authors and creators of the UniRep model make promising claims, and give several performance and quantitative tests to support this. In this report, we investigate the methods used to yield the model, and reproduce some of the more prominent results. In addition we seek to clarify the reasoning behind the design choices and any significant trade-offs these choices require. 
+
+Before we discuss the results, we provide some background information. The UniRep model relies on recurrent neural networks and a compressed representation of protein sequences. We will provide some background explanations required to understand the modelling part. There are also several nontrivial performance metrics that will be covered in this report for the sake of understanding. Finally, we will briefly discuss the downstream tasks and what they entail.
+
+The UniRep paper itself is discussed in its own section, providing the article's key contributions, motivation and results.
+
+The remainder of the report presents and discusses the key reproduced results and how they measure in comparison with the UniRep paper results. This includes a critical inspection of some of the claims made and ultimately some suggestions for future work and alternative approaches.
+
 % Outlining the motivation for the research
 % Explaining the main contribution of the paper
 % Discussion of the key results
 % Concluding remarks and opportunities for future research
 
+\clearpage
 \section{Background}
 
 % mLSTM:
 % https://arxiv.org/pdf/1609.07959.pdf
 
-RNNs
+\subsection{RNNs}
+    LSTM
+    
+    mLSTM
 
-LSTM
+\subsection{TAPE}
+\subsection{Performance Metrics}
 
-mLSTM
-
+\clearpage
 \section{The UniRep model}
 
 \subsection{Motivation}
@@ -47,12 +70,13 @@ Enabling protein engineering prediction task
 
 \subsection{Discussion and results}
 
-The unirep models (64, 256, 1900)
+The unirep models (64, 256, 1900) \cite{alley2019unified}
 
 Unirep fusion - where is it better
 
 Question: Average of hidden states... Why?
 
+\clearpage
 \section{Reproduction of UniRep}
 
 ... figures 1a 1b 1c ...
@@ -61,8 +85,14 @@ TAPE downstream tasks
 
 \subsection{Evaluation}
 
-\section*{UniRep}
-The UniRep model \cite{alley2019unified} enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref).
+\clearpage
+\section{Discussion}
+
+\clearpage
+\section{Conclusion}
+
+% \section*{UniRep}
+% The UniRep model \cite{alley2019unified} enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref).
 
 % References
 \clearpage
