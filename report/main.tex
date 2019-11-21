@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,11pt]{report}
 
 % Language and encoding
 \usepackage[utf8]{inputenc}
@@ -19,9 +19,8 @@
 \usepackage{mathtools}
 \usepackage{bm}
 
-% Concrete Mathematics Font
-% \usepackage[boldsans]{ccfonts}
-% \usepackage[euler-digits,euler-hat-accent]{eulervm}
+% For href
+\usepackage{hyperref}
 
 % Linux Libertine Font
 \usepackage[T1]{fontenc}
@@ -59,11 +58,11 @@
 \date{}
 
 \begin{document}
-\maketitle
-\vspace{-1.5cm}
+
+\input{frontpage.tex}
 
 \section*{UniRep}
-The UniRep model enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref). 
+The UniRep model enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref).
 
 % References
 \clearpage
