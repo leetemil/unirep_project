@@ -1,68 +1,68 @@
-\documentclass[a4paper,11pt]{report}
+\documentclass[a4paper,11pt]{article}
 
-% Language and encoding
-\usepackage[utf8]{inputenc}
-\usepackage[english]{babel}
-
-% Proper date format
-\usepackage[yyyymmdd]{datetime}
-
-% For front page
-\usepackage{wallpaper}
-
-% For margin
-\usepackage[margin=3cm]{geometry}
-
-% For math
-\usepackage{amsmath,amssymb,amsthm}
-\usepackage{xfrac}
-\usepackage{mathtools}
-\usepackage{bm}
-
-% For href
-\usepackage{hyperref}
-
-% Linux Libertine Font
-\usepackage[T1]{fontenc}
-\usepackage[tt = false]{libertine}
-
-% For quotes
-\usepackage{csquotes}
-
-% For figures
-\usepackage{graphicx}
-\usepackage{caption}
-
-% For figure positioning (allows use of H)
-\usepackage{float}
-
-% For references
-\usepackage[backend=biber, style=numeric, sorting=none]{biblatex}
-\addbibresource{references.bib}
-
-% For paragraph skipping
-\usepackage{parskip}
-
-% For appendix
-\usepackage[toc,page]{appendix}
-
-% For text coloring
-\usepackage{color}
-
-% For enumeration with letters
-\usepackage{enumerate}
+\input{packages.tex}
 
 \input{formatting.tex}
-
-\title{Ree}
-\date{}
 
 \begin{document}
 
 \input{frontpage.tex}
 
+\section{Introduction}
+% Outlining the motivation for the research
+% Explaining the main contribution of the paper
+% Discussion of the key results
+% Concluding remarks and opportunities for future research
+
+\section{Background}
+
+% mLSTM:
+% https://arxiv.org/pdf/1609.07959.pdf
+
+RNNs
+
+LSTM
+
+mLSTM
+
+\section{The UniRep model}
+
+\subsection{Motivation}
+
+Unsupervised learning
+
+Lots of unlabelled protein data
+
+Representation learning
+
+Automatic feature extraction
+
+\subsection{Main contribution}
+
+Protein feature predictions
+
+Universal protein feature extraction model
+
+Enabling protein engineering prediction task
+
+\subsection{Discussion and results}
+
+The unirep models (64, 256, 1900)
+
+Unirep fusion - where is it better
+
+Question: Average of hidden states... Why?
+
+\section{Reproduction of UniRep}
+
+... figures 1a 1b 1c ...
+
+TAPE downstream tasks
+
+\subsection{Evaluation}
+
 \section*{UniRep}
-The UniRep model enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref).
+The UniRep model \cite{alley2019unified} enables stability prediction of proteins, and so one claim is that this allows for the UniRep model by work as a basis for the prediction of protein function directly from protein sequence (ref).
 
 % References
 \clearpage
