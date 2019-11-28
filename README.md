@@ -1,6 +1,14 @@
 # unirep_project
 Repository for project out of course scope on Unirep article.
 
+## TODO
+
+- [ ] Fetch and load data into Python.
+- [ ] Make dummy model and predict using PyTorch.
+- [ ] Visualize t-SNE. (figure 2 c).
+- [ ] Visualize PCA (figure 2 a).
+- [ ] Visualize t-SNE (figure 2 b).
+
 ## UniRep Sources
 - [The Nature Methods article.](https://www.nature.com/articles/s41592-019-0598-1)
 - [Code for UniRep model training and inference with trained weights + links to data.](https://github.com/churchlab/UniRep)
