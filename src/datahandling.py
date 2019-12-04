@@ -3,7 +3,6 @@ from torch.utils.data import IterableDataset, DataLoader
 import torch
 
 def seq2idx(seq):
-    print("called")
     return torch.Tensor([ord(c) - 65 for c in seq]).unsqueeze(-1)
 
 def idxs2seq(idxs):
