@@ -20,7 +20,7 @@ class ProteinDataset(IterableDataset):
         return encodedSeqs
 
 def sequenceCollateFn(sequences):
-    return torch.nn.utils.rnn.pack_sequence(sequences, enforce_sorted = False)
+    return torch.nn.utils.rnn.pad_sequence(sequences)
 
 def getProteinDataLoader(proteinDataset, batch_size = 32):
     return DataLoader(proteinDataset, batch_size = batch_size, collate_fn = sequenceCollateFn)
