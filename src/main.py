@@ -9,7 +9,6 @@ from datahandling import ProteinDataset, getProteinDataLoader, idx2seq
 from constants import *
 
 class UniRef(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.input_size = 10
@@ -31,8 +30,9 @@ class UniRef(nn.Module):
 # Define model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = UniRef().to(device)
-BATCH_SIZE = 32
+BATCH_SIZE = 1024
 PRINT_EVERY = 100
+SAVE_EVERY = 100
 
 # Load data
 data_file = Path("../data/UniRef50/uniref50.fasta")
@@ -70,4 +70,12 @@ for i, (xb, xb_lens) in enumerate(protein_dataloader):
     loop_time = end_time - start_time
     total_time += loop_time
     if (i % PRINT_EVERY) == 0:
-        print(f"Iteration: {i:4}, loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f}, padded length: {xb.size(0):4}")
+        print(f"Iter: {i:6}, loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:6.3f}%")
+
+    if (i % SAVE_EVERY) == 0:
+        torch.save({
+            "iteration": i,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": opt.state_dict(),
+            "loss": loss
+        }, "model.torch")
