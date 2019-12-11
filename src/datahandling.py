@@ -28,4 +28,4 @@ def sequenceCollateFn(sequences):
     return torch.nn.utils.rnn.pad_sequence(sequences, padding_value = PADDING_VALUE), [len(s) for s in sequences]
 
 def getProteinDataLoader(proteinDataset, batch_size = 32):
-    return DataLoader(proteinDataset, batch_size = batch_size, collate_fn = sequenceCollateFn, pin_memory = True)
+    return DataLoader(proteinDataset, batch_size = batch_size, collate_fn = sequenceCollateFn)

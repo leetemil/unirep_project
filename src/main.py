@@ -18,7 +18,7 @@ class UniRef(nn.Module):
 
         self.embed = nn.Embedding(NUM_TOKENS, 10, padding_idx = PADDING_VALUE)
         self.rnn = nn.LSTM(self.input_size, self.hidden_size, num_layers = self.num_layers)
-        self.lin = nn.Linear(64, NUM_INFERENCE_TOKENS)
+        self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
     def forward(self, xb, xb_lens):
         embedding = self.embed(xb)
@@ -31,11 +31,13 @@ class UniRef(nn.Module):
 # Define model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = UniRef().to(device)
+BATCH_SIZE = 32
+PRINT_EVERY = 100
 
 # Load data
 data_file = Path("../data/UniRef50/uniref50.fasta")
 protein_dataset = ProteinDataset(data_file, device)
-protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = 32)
+protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
 
 # Define optimizer
 opt = torch.optim.Adam(model.parameters())
@@ -43,7 +45,6 @@ opt = torch.optim.Adam(model.parameters())
 # Define loss function
 loss_fn = nn.CrossEntropyLoss(ignore_index = PADDING_VALUE)
 
-train_iters = 100
 total_time = 0
 for i, (xb, xb_lens) in enumerate(protein_dataloader):
     start_time = time.time()
@@ -51,7 +52,7 @@ for i, (xb, xb_lens) in enumerate(protein_dataloader):
     pred = model(xb, xb_lens)
 
     # Calculate loss
-    true = torch.zeros(xb.shape, dtype = torch.int64) + PADDING_VALUE
+    true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
     true[:-1, :] = xb[1:, :]
 
     # Permute to correct shape for loss
@@ -68,6 +69,5 @@ for i, (xb, xb_lens) in enumerate(protein_dataloader):
     end_time = time.time()
     loop_time = end_time - start_time
     total_time += loop_time
-    print(f"Iteration: {i:4}, loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f}, padded length: {xb.size(0):4}")
-    if i > train_iters:
-        break
+    if (i % PRINT_EVERY) == 0:
+        print(f"Iteration: {i:4}, loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f}, padded length: {xb.size(0):4}")
