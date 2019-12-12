@@ -14,7 +14,7 @@ echo $CUDA_VISIBLE_DEVICES
 # Script:
 pip3 install --user torch torchvision
 pip3 install --user biopython
-python3 main.py
+python3 -u main.py
 
 # End
 echo "Finished"

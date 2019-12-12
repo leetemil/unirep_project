@@ -19,6 +19,11 @@ class UniRef(nn.Module):
         self.rnn = nn.LSTM(self.input_size, self.hidden_size, num_layers = self.num_layers)
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
+        # Apply weight norm on LSTM
+        for i in range(self.num_layers):
+            nn.utils.weight_norm(self.rnn, f"weight_ih_l{i}")
+            nn.utils.weight_norm(self.rnn, f"weight_hh_l{i}")
+
     def forward(self, xb, xb_lens):
         embedding = self.embed(xb)
         packed_seqs = torch.nn.utils.rnn.pack_padded_sequence(embedding, xb_lens, enforce_sorted = False)
@@ -30,11 +35,13 @@ class UniRef(nn.Module):
 # Define model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = UniRef().to(device)
+EPOCHS = 10000
 BATCH_SIZE = 1024
 PRINT_EVERY = 100
 SAVE_EVERY = 100
 
 # Load data
+# data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
 data_file = Path("../data/UniRef50/uniref50.fasta")
 protein_dataset = ProteinDataset(data_file, device)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
@@ -45,37 +52,40 @@ opt = torch.optim.Adam(model.parameters())
 # Define loss function
 loss_fn = nn.CrossEntropyLoss(ignore_index = PADDING_VALUE)
 
-total_time = 0
-for i, (xb, xb_lens) in enumerate(protein_dataloader):
-    start_time = time.time()
-    # Forward pass
-    pred = model(xb, xb_lens)
+for e in range(EPOCHS):
+    total_time = 0
+    for i, (xb, xb_lens) in enumerate(protein_dataloader):
+        start_time = time.time()
+        # Forward pass
+        pred = model(xb, xb_lens)
 
-    # Calculate loss
-    true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
-    true[:-1, :] = xb[1:, :]
+        # Calculate loss
+        true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
+        true[:-1, :] = xb[1:, :]
 
-    # Permute to correct shape for loss
-    pred = pred.flatten(0, 1)
-    true = true.flatten()
-    loss = loss_fn(pred, true)
+        # Permute to correct shape for loss
+        pred = pred.flatten(0, 1)
+        true = true.flatten()
+        loss = loss_fn(pred, true)
 
-    # Calculate gradient which minimizes loss
-    loss.backward()
+        # Calculate gradient which minimizes loss
+        loss.backward()
+        grads = [p.grad for p in model.parameters()]
+        gradsum = sum(map(torch.sum, grads)).item()
 
-    # Take optimizer step in the direction of the gradient and reset
-    opt.step()
-    opt.zero_grad()
-    end_time = time.time()
-    loop_time = end_time - start_time
-    total_time += loop_time
-    if (i % PRINT_EVERY) == 0:
-        print(f"Iter: {i:6}, loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:6.3f}%")
+        # Take optimizer step in the direction of the gradient and reset
+        opt.step()
+        opt.zero_grad()
+        end_time = time.time()
+        loop_time = end_time - start_time
+        total_time += loop_time
+        if (i % PRINT_EVERY) == 0:
+            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:6.3f}% gradsum: {gradsum}")
 
-    if (i % SAVE_EVERY) == 0:
-        torch.save({
-            "iteration": i,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": opt.state_dict(),
-            "loss": loss
-        }, "model.torch")
+        if (i % SAVE_EVERY) == 0:
+            torch.save({
+                "iteration": i,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": opt.state_dict(),
+                "loss": loss
+            }, "model.torch")
