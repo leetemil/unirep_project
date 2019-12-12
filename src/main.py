@@ -35,9 +35,17 @@ class UniRef(nn.Module):
 EMBED_SIZE = 10
 HIDDEN_SIZE = 64
 NUM_LAYERS = 4
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = UniRef(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS).to(device)
+model = UniRef(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS)
+
+# Use DataParallel if more than 1 GPU!
+num_GPUs = torch.cuda.device_count()
+print(f"Found {num_GPUs} GPUs!")
+if num_GPUs > 1:
+    model = nn.DataParallel(model)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 # Apply weight norm on LSTM
 for i in range(model.num_layers):
@@ -46,16 +54,14 @@ for i in range(model.num_layers):
     nn.utils.weight_norm(model.rnn, f"bias_ih_l{i}")
     nn.utils.weight_norm(model.rnn, f"bias_hh_l{i}")
 
-model.rnn.flatten_parameters()
-
-EPOCHS = 10000
+EPOCHS = 1000
 BATCH_SIZE = 1024
 PRINT_EVERY = 100
 SAVE_EVERY = 100
 
 # Load data
-data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
-# data_file = Path("../data/UniRef50/uniref50.fasta")
+# data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
+data_file = Path("../data/UniRef50/uniref50.fasta")
 protein_dataset = ProteinDataset(data_file, device)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
 
