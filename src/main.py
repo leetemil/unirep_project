@@ -3,7 +3,7 @@ import time
 import warnings
 
 # Ignore warning about contiguous memory
-warnings.filterwarnings("ignore", UserWarning)
+warnings.filterwarnings("ignore", category = UserWarning)
 
 import torch
 from torch import nn
@@ -99,7 +99,7 @@ for e in range(EPOCHS):
         loop_time = end_time - start_time
         total_time += loop_time
         if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:6.3f}% gradsum: {gradsum}")
+            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:7.3f}% gradsum: {gradsum}")
 
         if (i % SAVE_EVERY) == 0:
             torch.save({

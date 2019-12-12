@@ -20,10 +20,10 @@ class mLSTMCell(jit.ScriptModule):
         self.hidden_size = hidden_size
 
         # TODO: Consider bias or not?
-        self.wx = nn.Linear(input_size, 4 * hidden_size, bias = False)
+        self.wx = nn.Linear(input_size, 4 * hidden_size, bias = True)
         self.wh = nn.Linear(hidden_size, 4 * hidden_size, bias = True)
-        self.wmx = nn.Linear(input_size, hidden_size, bias = False)
-        self.wmh = nn.Linear(hidden_size, hidden_size, bias = False)
+        self.wmx = nn.Linear(input_size, hidden_size, bias = True)
+        self.wmh = nn.Linear(hidden_size, hidden_size, bias = True)
 
     @jit.script_method
     def forward(self, input, state):

@@ -4,6 +4,9 @@ import torch
 
 from constants import *
 
+def seq2idx(seq, device):
+    return torch.tensor([SEQ2IDX[s] for s in seq], device = device)
+
 def idx2seq(idxs):
     return "".join([IDX2SEQ[i] for i in idxs if i != PADDING_VALUE and i != SEQ2IDX[EOS]])
 
@@ -14,14 +17,11 @@ class ProteinDataset(IterableDataset):
         self.device = device
 
     def __iter__(self):
-        def seq2idx(seq):
-            return torch.tensor([SEQ2IDX[s] for s in seq], device = self.device)
-
         rawSeqs = SeqIO.parse(self.file, "fasta")
         shortSeqs = filter(lambda x: len(x) <= 2000, rawSeqs)
         noBJXZSeqs = filter(lambda x: all(c not in EXCLUDED_AMINO_ACIDS for c in x), shortSeqs)
         strSeqs = map(lambda x: list(str(x.seq)) + [EOS], noBJXZSeqs)
-        encodedSeqs = map(seq2idx, strSeqs)
+        encodedSeqs = map(lambda x: seq2idx(x, device), strSeqs)
         return encodedSeqs
 
 def sequenceCollateFn(sequences):
