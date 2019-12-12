@@ -1,5 +1,9 @@
 from pathlib import Path
 import time
+import warnings
+
+# Ignore warning about contiguous memory
+warnings.filterwarnings("ignore", UserWarning)
 
 import torch
 from torch import nn
@@ -9,20 +13,15 @@ from datahandling import ProteinDataset, getProteinDataLoader, idx2seq
 from constants import *
 
 class UniRef(nn.Module):
-    def __init__(self):
+    def __init__(self, embed_size, hidden_size, num_layers):
         super().__init__()
-        self.input_size = 10
-        self.hidden_size = 64
-        self.num_layers = 4
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
 
-        self.embed = nn.Embedding(NUM_TOKENS, 10, padding_idx = PADDING_VALUE)
-        self.rnn = nn.LSTM(self.input_size, self.hidden_size, num_layers = self.num_layers)
+        self.embed = nn.Embedding(NUM_TOKENS, self.embed_size, padding_idx = PADDING_VALUE)
+        self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
-
-        # Apply weight norm on LSTM
-        for i in range(self.num_layers):
-            nn.utils.weight_norm(self.rnn, f"weight_ih_l{i}")
-            nn.utils.weight_norm(self.rnn, f"weight_hh_l{i}")
 
     def forward(self, xb, xb_lens):
         embedding = self.embed(xb)
@@ -33,16 +32,30 @@ class UniRef(nn.Module):
         return linear
 
 # Define model
+EMBED_SIZE = 10
+HIDDEN_SIZE = 64
+NUM_LAYERS = 4
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = UniRef().to(device)
+
+model = UniRef(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS).to(device)
+
+# Apply weight norm on LSTM
+for i in range(model.num_layers):
+    nn.utils.weight_norm(model.rnn, f"weight_ih_l{i}")
+    nn.utils.weight_norm(model.rnn, f"weight_hh_l{i}")
+    nn.utils.weight_norm(model.rnn, f"bias_ih_l{i}")
+    nn.utils.weight_norm(model.rnn, f"bias_hh_l{i}")
+
+model.rnn.flatten_parameters()
+
 EPOCHS = 10000
 BATCH_SIZE = 1024
 PRINT_EVERY = 100
 SAVE_EVERY = 100
 
 # Load data
-# data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
-data_file = Path("../data/UniRef50/uniref50.fasta")
+data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
+# data_file = Path("../data/UniRef50/uniref50.fasta")
 protein_dataset = ProteinDataset(data_file, device)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
 
