@@ -62,8 +62,8 @@ model.to(device)
 
 EPOCHS = 1000
 BATCH_SIZE = 1024
-PRINT_EVERY = 100
-SAVE_EVERY = 100
+PRINT_EVERY = 1000
+SAVE_EVERY = 1000
 
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
