@@ -20,20 +20,21 @@ class UniRef(nn.Module):
         self.num_layers = num_layers
 
         self.embed = nn.Embedding(NUM_TOKENS, self.embed_size, padding_idx = PADDING_VALUE)
-        self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
+        self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
     def forward(self, xb, xb_lens):
+        longest_length = xb.size(1)
         embedding = self.embed(xb)
-        packed_seqs = torch.nn.utils.rnn.pack_padded_sequence(embedding, xb_lens, enforce_sorted = False)
-        out, (hidden, cell) = self.rnn(packed_seqs)
-        padded_out, lens = torch.nn.utils.rnn.pad_packed_sequence(out)
-        linear = self.lin(padded_out)
+        packed_seqs = torch.nn.utils.rnn.pack_padded_sequence(embedding, xb_lens, batch_first = True, enforce_sorted = False)
+        packed_out, (hidden, cell) = self.rnn(packed_seqs)
+        out, lens = torch.nn.utils.rnn.pad_packed_sequence(packed_out, total_length = longest_length, batch_first = True)
+        linear = self.lin(out)
         return linear
 
 # Get hardware
 print("CUDNN version:", torch.backends.cudnn.version())
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 NUM_GPUS = torch.cuda.device_count()
 MULTI_GPU = NUM_GPUS > 1
 print(f"Found {NUM_GPUS} GPUs!")
@@ -60,7 +61,7 @@ if MULTI_GPU:
 model.to(device)
 
 EPOCHS = 1000
-BATCH_SIZE = 1024
+BATCH_SIZE = 4
 PRINT_EVERY = 100
 SAVE_EVERY = 100
 
@@ -86,17 +87,14 @@ for e in range(EPOCHS):
 
         # Calculate loss
         true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
-        true[:-1, :] = xb[1:, :]
+        true[:, :-1] = xb[:, 1:]
 
-        # Permute to correct shape for loss
         pred = pred.flatten(0, 1)
         true = true.flatten()
         loss = loss_fn(pred, true)
 
         # Calculate gradient which minimizes loss
         loss.backward()
-        grads = [p.grad for p in model.parameters()]
-        gradsum = sum(map(torch.sum, grads)).item()
 
         # Take optimizer step in the direction of the gradient and reset
         opt.step()
@@ -105,7 +103,7 @@ for e in range(EPOCHS):
         loop_time = end_time - start_time
         total_time += loop_time
         if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:7.3f}% gradsum: {gradsum}")
+            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:7.3f}%")
 
         if (i % SAVE_EVERY) == 0:
             torch.save({
