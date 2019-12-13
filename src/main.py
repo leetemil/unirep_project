@@ -43,17 +43,25 @@ NUM_LAYERS = 4
 
 model = UniRef(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS)
 
-# Apply weight norm on LSTM
-for i in range(model.num_layers):
-    nn.utils.weight_norm(model.rnn, f"weight_ih_l{i}")
-    nn.utils.weight_norm(model.rnn, f"weight_hh_l{i}")
-    nn.utils.weight_norm(model.rnn, f"bias_ih_l{i}")
-    nn.utils.weight_norm(model.rnn, f"bias_hh_l{i}")
-
 # Use DataParallel if more than 1 GPU!
 print(f"Found {NUM_GPUS} GPUs!")
 if MULTI_GPU:
     model = nn.DataParallel(model)
+
+# Apply weight norm on LSTM
+if MULTI_GPU:
+    for i in range(model.module.num_layers):
+        nn.utils.weight_norm(model.module.rnn, f"weight_ih_l{i}")
+        nn.utils.weight_norm(model.module.rnn, f"weight_hh_l{i}")
+        nn.utils.weight_norm(model.module.rnn, f"bias_ih_l{i}")
+        nn.utils.weight_norm(model.module.rnn, f"bias_hh_l{i}")
+else:
+    for i in range(model.num_layers):
+        nn.utils.weight_norm(model.rnn, f"weight_ih_l{i}")
+        nn.utils.weight_norm(model.rnn, f"weight_hh_l{i}")
+        nn.utils.weight_norm(model.rnn, f"bias_ih_l{i}")
+        nn.utils.weight_norm(model.rnn, f"bias_hh_l{i}")
+
 
 EPOCHS = 1000
 BATCH_SIZE = 1024
