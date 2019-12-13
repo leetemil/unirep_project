@@ -8,7 +8,9 @@
 
 # Info:
 hostname
-echo $CUDA_VISIBLE_DEVICES
+echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
+echo "CUDA version:"
+nvcc --version
 
 # Script:
 # -u: Unbuffered output
