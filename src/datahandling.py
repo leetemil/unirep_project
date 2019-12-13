@@ -11,7 +11,7 @@ def idx2seq(idxs):
     return "".join([IDX2SEQ[i] for i in idxs if i != PADDING_VALUE and i != SEQ2IDX[EOS]])
 
 class ProteinDataset(IterableDataset):
-    def __init__(self, file, device):
+    def __init__(self, file, device = None):
         super().__init__()
         self.file = file
         self.device = device

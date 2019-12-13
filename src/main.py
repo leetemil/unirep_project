@@ -32,6 +32,7 @@ class UniRef(nn.Module):
         return linear
 
 # Get hardware
+print("CUDNN version:", torch.backends.cudnn.version())
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_GPUS = torch.cuda.device_count()
 MULTI_GPU = NUM_GPUS > 1
@@ -66,7 +67,7 @@ SAVE_EVERY = 100
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
 data_file = Path("../data/UniRef50/uniref50.fasta")
-protein_dataset = ProteinDataset(data_file, device)
+protein_dataset = ProteinDataset(data_file)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
 
 # Define optimizer
