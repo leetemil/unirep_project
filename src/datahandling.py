@@ -21,7 +21,7 @@ class ProteinDataset(IterableDataset):
         shortSeqs = filter(lambda x: len(x) <= 2000, rawSeqs)
         noBJXZSeqs = filter(lambda x: all(c not in EXCLUDED_AMINO_ACIDS for c in x), shortSeqs)
         strSeqs = map(lambda x: list(str(x.seq)) + [EOS], noBJXZSeqs)
-        encodedSeqs = map(lambda x: seq2idx(x, device), strSeqs)
+        encodedSeqs = map(lambda x: seq2idx(x, self.device), strSeqs)
         return encodedSeqs
 
 def sequenceCollateFn(sequences):
