@@ -34,7 +34,7 @@ class UniRef(nn.Module):
 
 # Get hardware
 print("CUDNN version:", torch.backends.cudnn.version())
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_GPUS = torch.cuda.device_count()
 MULTI_GPU = NUM_GPUS > 1
 print(f"Found {NUM_GPUS} GPUs!")
@@ -61,9 +61,9 @@ if MULTI_GPU:
 model.to(device)
 
 EPOCHS = 1000
-BATCH_SIZE = 4
-PRINT_EVERY = 100
-SAVE_EVERY = 100
+BATCH_SIZE = 1024
+PRINT_EVERY = 1
+SAVE_EVERY = 1
 
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")

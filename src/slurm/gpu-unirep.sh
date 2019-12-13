@@ -12,7 +12,7 @@ echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
 # Script:
 # -u: Unbuffered output
-python3 -u main.py
+CUDA_LAUNCH_BLOCKING=1 python3 -u main.py
 
 # End
 echo "Finished"
