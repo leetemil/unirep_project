@@ -4,7 +4,7 @@ import torch
 
 from constants import *
 
-def seq2idx(seq, device):
+def seq2idx(seq, device = None):
     return torch.tensor([SEQ2IDX[s] for s in seq], device = device)
 
 def idx2seq(idxs):

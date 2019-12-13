@@ -67,7 +67,8 @@ SAVE_EVERY = 100
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
 data_file = Path("../data/UniRef50/uniref50.fasta")
-protein_dataset = ProteinDataset(data_file)
+data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
+protein_dataset = ProteinDataset(data_file, data_device)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
 
 # Define optimizer
