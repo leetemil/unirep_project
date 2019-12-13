@@ -31,6 +31,11 @@ class UniRef(nn.Module):
         linear = self.lin(padded_out)
         return linear
 
+# Get hardware
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+NUM_GPUS = torch.cuda.device_count()
+MULTI_GPU = NUM_GPUS > 1
+
 # Define model
 EMBED_SIZE = 10
 HIDDEN_SIZE = 64
@@ -39,20 +44,20 @@ NUM_LAYERS = 4
 model = UniRef(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS)
 
 # Use DataParallel if more than 1 GPU!
-num_GPUs = torch.cuda.device_count()
-print(f"Found {num_GPUs} GPUs!")
-if num_GPUs > 1:
+print(f"Found {NUM_GPUS} GPUs!")
+if MULTI_GPU:
     model = nn.DataParallel(model)
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
 # Apply weight norm on LSTM
-for i in range(model.num_layers):
-    nn.utils.weight_norm(model.rnn, f"weight_ih_l{i}")
-    nn.utils.weight_norm(model.rnn, f"weight_hh_l{i}")
-    nn.utils.weight_norm(model.rnn, f"bias_ih_l{i}")
-    nn.utils.weight_norm(model.rnn, f"bias_hh_l{i}")
+if MULTI_GPU:
+    uniref_model = model.module
+else:
+    uniref_model = model
+for i in range(uniref_model.num_layers):
+    nn.utils.weight_norm(uniref_model.rnn, f"weight_ih_l{i}")
+    nn.utils.weight_norm(uniref_model.rnn, f"weight_hh_l{i}")
+    nn.utils.weight_norm(uniref_model.rnn, f"bias_ih_l{i}")
+    nn.utils.weight_norm(uniref_model.rnn, f"bias_hh_l{i}")
 
 EPOCHS = 1000
 BATCH_SIZE = 1024
