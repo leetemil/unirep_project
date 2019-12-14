@@ -51,7 +51,7 @@ class LSTMLayer(jit.ScriptModule):
     @jit.script_method
     def forward(self, input, state):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]
-        inputs = input.unbind(0)
+        inputs = input.unbind(1)
         outputs = torch.jit.annotate(List[Tensor], [])
         for i in range(len(inputs)):
             out, state = self.cell(inputs[i], state)
@@ -59,12 +59,12 @@ class LSTMLayer(jit.ScriptModule):
         return torch.stack(outputs), state
 
 def script_mlstm(input_size, hidden_size, num_layers = 1, bias=True,
-                batch_first=False, dropout=False, bidirectional=False):
+                batch_first=True, dropout=False, bidirectional=False):
     '''Returns a ScriptModule that implements an mLSTM.'''
 
     # The following are not implemented.
     assert bias
-    assert not batch_first
+    assert batch_first
 
     if bidirectional:
         stack_type = StackedLSTM2
