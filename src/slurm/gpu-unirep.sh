@@ -7,7 +7,7 @@
 #SBATCH --time=0:05:00
 
 # Info:
-date -Ins
+date -Is
 hostname
 echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
@@ -16,4 +16,5 @@ echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 python3 -u main.py
 
 # End
+date -Is
 echo "Finished"
