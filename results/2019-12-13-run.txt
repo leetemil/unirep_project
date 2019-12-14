@@ -1,0 +1,86 @@
+DataParallel, no weight norm
+
+Script:
+#!/bin/bash
+# normal cpu stuff: allocate cpus, memory
+#SBATCH --ntasks=1 --cpus-per-task=4 --mem=6000M
+# we run on the gpu partition and we allocate 4 titan x
+#SBATCH -p gpu --gres=gpu:titanx:4
+#Note that a program will be killed once it exceeds this time!
+#SBATCH --time=3-6:00:00
+
+# Info:
+hostname
+echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
+
+# Script:
+# -u: Unbuffered output
+python3 -u main.py
+
+# End
+echo "Finished"
+
+Output:
+a00621.science.domain
+GPU IDs: 0,1,2,3
+CUDNN version: 7603
+Found 4 GPUs!
+Epoch:      0 Batch:      0 Loss: 3.1412 time:  5.51, avg. time:  5.51 progress:   0.000%
+Epoch:      0 Batch:   1000 Loss: 2.8654 time:  0.63, avg. time:  0.69 progress:   2.844%
+Epoch:      0 Batch:   2000 Loss: 2.8481 time:  0.85, avg. time:  0.73 progress:   5.689%
+Epoch:      0 Batch:   3000 Loss: 2.8398 time:  0.85, avg. time:  0.76 progress:   8.533%
+Epoch:      0 Batch:   4000 Loss: 2.8426 time:  0.82, avg. time:  0.77 progress:  11.378%
+Epoch:      0 Batch:   5000 Loss: 2.8594 time:  0.71, avg. time:  0.77 progress:  14.222%
+Epoch:      0 Batch:   6000 Loss: 2.7951 time:  0.88, avg. time:  0.78 progress:  17.067%
+Epoch:      0 Batch:   7000 Loss: 2.7000 time:  0.81, avg. time:  0.78 progress:  19.911%
+Epoch:      0 Batch:   8000 Loss: 2.8316 time:  0.79, avg. time:  0.78 progress:  22.756%
+Epoch:      0 Batch:   9000 Loss: 2.8232 time:  0.83, avg. time:  0.77 progress:  25.600%
+Epoch:      0 Batch:  10000 Loss: 2.8612 time:  0.61, avg. time:  0.77 progress:  28.444%
+Epoch:      0 Batch:  11000 Loss: 2.8156 time:  0.78, avg. time:  0.76 progress:  31.289%
+Epoch:      0 Batch:  12000 Loss: 2.7118 time:  0.70, avg. time:  0.75 progress:  34.133%
+Epoch:      0 Batch:  13000 Loss: 2.7960 time:  0.69, avg. time:  0.75 progress:  36.978%
+Epoch:      0 Batch:  14000 Loss: 2.7685 time:  0.71, avg. time:  0.74 progress:  39.822%
+Epoch:      0 Batch:  15000 Loss: 2.7831 time:  0.62, avg. time:  0.74 progress:  42.667%
+Epoch:      0 Batch:  16000 Loss: 2.7787 time:  0.68, avg. time:  0.73 progress:  45.511%
+Epoch:      0 Batch:  17000 Loss: 2.7967 time:  0.76, avg. time:  0.73 progress:  48.356%
+Epoch:      0 Batch:  18000 Loss: 2.7760 time:  0.69, avg. time:  0.73 progress:  51.200%
+Epoch:      0 Batch:  19000 Loss: 2.7723 time:  0.69, avg. time:  0.73 progress:  54.044%
+Epoch:      0 Batch:  20000 Loss: 2.7802 time:  0.81, avg. time:  0.73 progress:  56.889%
+Epoch:      0 Batch:  21000 Loss: 2.7950 time:  0.68, avg. time:  0.73 progress:  59.733%
+Epoch:      0 Batch:  22000 Loss: 2.7877 time:  0.64, avg. time:  0.72 progress:  62.578%
+Epoch:      0 Batch:  23000 Loss: 2.7703 time:  0.66, avg. time:  0.72 progress:  65.422%
+Epoch:      0 Batch:  24000 Loss: 2.7754 time:  0.81, avg. time:  0.72 progress:  68.267%
+Epoch:      0 Batch:  25000 Loss: 2.7676 time:  0.71, avg. time:  0.72 progress:  71.111%
+Epoch:      0 Batch:  26000 Loss: 2.7684 time:  0.67, avg. time:  0.72 progress:  73.956%
+Epoch:      0 Batch:  27000 Loss: 2.7804 time:  0.74, avg. time:  0.72 progress:  76.800%
+Epoch:      0 Batch:  28000 Loss: 2.7775 time:  0.76, avg. time:  0.72 progress:  79.644%
+Epoch:      0 Batch:  29000 Loss: 2.7620 time:  0.70, avg. time:  0.72 progress:  82.489%
+Epoch:      0 Batch:  30000 Loss: 2.7593 time:  0.76, avg. time:  0.72 progress:  85.333%
+Epoch:      0 Batch:  31000 Loss: 2.8156 time:  0.43, avg. time:  0.72 progress:  88.178%
+Epoch:      0 Batch:  32000 Loss: 2.7804 time:  0.52, avg. time:  0.71 progress:  91.022%
+Epoch:      0 Batch:  33000 Loss: 2.7701 time:  0.79, avg. time:  0.71 progress:  93.867%
+Epoch:      0 Batch:  34000 Loss: 2.7897 time:  0.69, avg. time:  0.71 progress:  96.711%
+Epoch:      0 Batch:  35000 Loss: 2.7503 time:  0.68, avg. time:  0.71 progress:  99.556%
+Epoch:      0 Batch:  36000 Loss: 2.7727 time:  0.61, avg. time:  0.71 progress: 102.400%
+Epoch:      0 Batch:  37000 Loss: 2.8189 time:  0.83, avg. time:  0.71 progress: 105.244%
+Epoch:      1 Batch:      0 Loss: 2.8467 time:  0.60, avg. time:  0.60 progress:   0.000%
+Epoch:      1 Batch:   1000 Loss: 2.7827 time:  0.62, avg. time:  0.67 progress:   2.844%
+Epoch:      1 Batch:   2000 Loss: 2.8190 time:  0.83, avg. time:  0.72 progress:   5.689%
+Epoch:      1 Batch:   3000 Loss: 2.8187 time:  0.83, avg. time:  0.75 progress:   8.533%
+Epoch:      1 Batch:   4000 Loss: 2.8243 time:  0.82, avg. time:  0.76 progress:  11.378%
+Epoch:      1 Batch:   5000 Loss: 2.8432 time:  0.69, avg. time:  0.76 progress:  14.222%
+Epoch:      1 Batch:   6000 Loss: 2.7779 time:  0.86, avg. time:  0.77 progress:  17.067%
+Epoch:      1 Batch:   7000 Loss: 2.6819 time:  0.84, avg. time:  0.77 progress:  19.911%
+Epoch:      1 Batch:   8000 Loss: 2.8097 time:  0.75, avg. time:  0.77 progress:  22.756%
+Epoch:      1 Batch:   9000 Loss: 2.8102 time:  0.81, avg. time:  0.76 progress:  25.600%
+Epoch:      1 Batch:  10000 Loss: 2.8361 time:  0.60, avg. time:  0.76 progress:  28.444%
+Epoch:      1 Batch:  11000 Loss: 2.8042 time:  0.76, avg. time:  0.75 progress:  31.289%
+Epoch:      1 Batch:  12000 Loss: 2.6949 time:  0.72, avg. time:  0.74 progress:  34.133%
+Epoch:      1 Batch:  13000 Loss: 2.7797 time:  0.66, avg. time:  0.74 progress:  36.978%
+Epoch:      1 Batch:  14000 Loss: 2.7555 time:  0.72, avg. time:  0.73 progress:  39.822%
+Epoch:      1 Batch:  15000 Loss: 2.7618 time:  0.64, avg. time:  0.73 progress:  42.667%
+Epoch:      1 Batch:  16000 Loss: 2.7648 time:  0.71, avg. time:  0.73 progress:  45.511%
+Epoch:      1 Batch:  17000 Loss: 2.7846 time:  0.76, avg. time:  0.72 progress:  48.356%
+Epoch:      1 Batch:  18000 Loss: 2.7618 time:  0.68, avg. time:  0.72 progress:  51.200%
+Epoch:      1 Batch:  19000 Loss: 2.7548 time:  0.70, avg. time:  0.72 progress:  54.044%
+slurmstepd: error: *** JOB 1334423 ON a00621 CANCELLED AT 2019-12-14T13:13:32 ***

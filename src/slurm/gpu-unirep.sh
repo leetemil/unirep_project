@@ -7,6 +7,7 @@
 #SBATCH --time=0:05:00
 
 # Info:
+date -Ins
 hostname
 echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
