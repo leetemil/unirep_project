@@ -82,9 +82,9 @@ for i in range(inner_model.num_layers):
     nn.utils.weight_norm(inner_model.rnn, f"bias_hh_l{i}")
 
 EPOCHS = 1000
-BATCH_SIZE = 4
-PRINT_EVERY = 1
-SAVE_EVERY = 1
+BATCH_SIZE = 1024
+PRINT_EVERY = 1000
+SAVE_EVERY = 1000
 
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
