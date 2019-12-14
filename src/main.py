@@ -103,7 +103,7 @@ for e in range(EPOCHS):
         loop_time = end_time - start_time
         total_time += loop_time
         if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 36000000:7.3f}%")
+            print(f"Epoch: {e:6} Batch: {i:6} Loss: {loss.item():5.4f} time: {loop_time:5.2f}, avg. time: {total_time / (i + 1):5.2f} progress: {100 * i * BATCH_SIZE / 39421231:7.3f}%")
 
         if (i % SAVE_EVERY) == 0:
             torch.save({
@@ -112,3 +112,4 @@ for e in range(EPOCHS):
                 "optimizer_state_dict": opt.state_dict(),
                 "loss": loss
             }, "model.torch")
+    print(f"Epoch {e} took {total_time / 3600:.2f} hours.")
