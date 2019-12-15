@@ -108,7 +108,8 @@ for e in range(EPOCHS):
         # Saving
         if (i % SAVE_EVERY) == 0:
             torch.save({
-                "iteration": i,
+                "epoch": e
+                "batch": i,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
                 "loss": loss
@@ -121,4 +122,4 @@ for e in range(EPOCHS):
 
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
-    print(f"Epoch {e} with {i + 1} batches took {epoch_time / 3600:.2f} hours ({(epoch_time / (i + 1)) / 3600:.2f} per batch).")
+    print(f"Epoch {e} with {i + 1} batches took {epoch_time / 3600:.2f} hours.")
