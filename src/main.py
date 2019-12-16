@@ -87,6 +87,10 @@ for e in range(EPOCHS):
             last_hidden = None
 
         for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
+            # Take optimizer step in the direction of the gradient and reset gradient
+            opt.step()
+            opt.zero_grad()
+
             trunc_xb = xb[:, start_idx:start_idx + TRUNCATION_WINDOW]
 
             # Forward pass
@@ -107,29 +111,24 @@ for e in range(EPOCHS):
             # Calculate gradient which minimizes loss
             loss.backward()
 
-            # Printing progress
-            sequences_processed = (i + 1) * BATCH_SIZE
-            time_taken = time.time() - epoch_start_time
-            avg_time = (time_taken) / (i + 1)
-            batches_left = NUM_BATCHES - (i + 1)
-            eta = max(0, avg_time * batches_left)
-            if (i % PRINT_EVERY) == 0:
-                print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
+        # Printing progress
+        sequences_processed = (i + 1) * BATCH_SIZE
+        time_taken = time.time() - epoch_start_time
+        avg_time = (time_taken) / (i + 1)
+        batches_left = NUM_BATCHES - (i + 1)
+        eta = max(0, avg_time * batches_left)
+        if (i % PRINT_EVERY) == 0:
+            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
 
-            # Saving
-            if (i % SAVE_EVERY) == 0:
-                torch.save({
-                    "epoch": e,
-                    "batch": i,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": opt.state_dict(),
-                    "loss": loss
-                }, "model.torch")
-
-            # Take optimizer step in the direction of the gradient and reset gradient
-            # Should be done after saving, since we otherwise save a different model than the one we reported on
-            opt.step()
-            opt.zero_grad()
+        # Saving
+        if (i % SAVE_EVERY) == 0:
+            torch.save({
+                "epoch": e,
+                "batch": i,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": opt.state_dict(),
+                "loss": loss
+            }, "model.torch")
 
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
