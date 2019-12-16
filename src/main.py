@@ -14,7 +14,7 @@ from datahandling import ProteinDataset, getProteinDataLoader
 from constants import *
 
 # Options
-MLSTM = False
+MLSTM = True
 EMBED_SIZE = 10
 HIDDEN_SIZE = 64
 NUM_LAYERS = 4
@@ -22,6 +22,7 @@ NUM_LAYERS = 4
 # Training parameters
 EPOCHS = 1000
 BATCH_SIZE = 1024
+TRUNCATION_WINDOW = 384
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
 PRINT_EVERY = 1000
 SAVE_EVERY = 1000
@@ -76,49 +77,59 @@ criterion = nn.CrossEntropyLoss(ignore_index = PADDING_VALUE)
 # Train
 for e in range(EPOCHS):
     epoch_start_time = time.time()
-    for i, (xb, xb_lens) in enumerate(protein_dataloader):
-        # Forward pass
+    for i, xb in enumerate(protein_dataloader):
+        # Hidden state for new batch should be reset to zero
+        # Hidden between batches should be the previous hidden state
         if MLSTM:
-            init_hidden = [(torch.zeros(HIDDEN_SIZE, device = data_device), torch.zeros(HIDDEN_SIZE, device = data_device)) for _ in range(NUM_LAYERS)]
-            pred = model(xb, xb_lens, init_hidden)
+            last_hidden = [(torch.zeros(BATCH_SIZE, HIDDEN_SIZE, device = data_device), torch.zeros(BATCH_SIZE, HIDDEN_SIZE, device = data_device)) for _ in range(NUM_LAYERS)]
         else:
-            pred = model(xb, xb_lens)
+            # Hidden state is zero if given as None
+            last_hidden = None
 
-        # Calculate loss
-        true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
-        true[:, :-1] = xb[:, 1:]
+        for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
+            trunc_xb = xb[:, start_idx:start_idx + TRUNCATION_WINDOW]
 
-        # Flatten the sequence dimension to compare each timestep in cross entropy loss
-        pred = pred.flatten(0, 1)
-        true = true.flatten()
-        loss = criterion(pred, true)
+            # Forward pass
+            if MLSTM:
+                pred, last_hidden = model(trunc_xb, [(h.detach(), c.detach()) for h, c in last_hidden])
+            else:
+                pred, last_hidden = model(trunc_xb, [h.detach() for h in last_hidden] if last_hidden else None)
 
-        # Calculate gradient which minimizes loss
-        loss.backward()
+            # Calculate loss
+            true = torch.zeros(trunc_xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
+            true[:, :-1] = trunc_xb[:, 1:]
 
-        # Printing progress
-        sequences_processed = (i + 1) * BATCH_SIZE
-        time_taken = time.time() - epoch_start_time
-        avg_time = (time_taken) / (i + 1)
-        batches_left = NUM_BATCHES - (i + 1)
-        eta = max(0, avg_time * batches_left)
-        if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
+            # Flatten the sequence dimension to compare each timestep in cross entropy loss
+            pred = pred.flatten(0, 1)
+            true = true.flatten()
+            loss = criterion(pred, true)
 
-        # Saving
-        if (i % SAVE_EVERY) == 0:
-            torch.save({
-                "epoch": e
-                "batch": i,
-                "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": opt.state_dict(),
-                "loss": loss
-            }, "model.torch")
+            # Calculate gradient which minimizes loss
+            loss.backward()
 
-        # Take optimizer step in the direction of the gradient and reset gradient
-        # Should be done after saving, since we otherwise save a different model than the one we reported on
-        opt.step()
-        opt.zero_grad()
+            # Printing progress
+            sequences_processed = (i + 1) * BATCH_SIZE
+            time_taken = time.time() - epoch_start_time
+            avg_time = (time_taken) / (i + 1)
+            batches_left = NUM_BATCHES - (i + 1)
+            eta = max(0, avg_time * batches_left)
+            if (i % PRINT_EVERY) == 0:
+                print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
+
+            # Saving
+            if (i % SAVE_EVERY) == 0:
+                torch.save({
+                    "epoch": e,
+                    "batch": i,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": opt.state_dict(),
+                    "loss": loss
+                }, "model.torch")
+
+            # Take optimizer step in the direction of the gradient and reset gradient
+            # Should be done after saving, since we otherwise save a different model than the one we reported on
+            opt.step()
+            opt.zero_grad()
 
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time

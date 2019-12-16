@@ -56,7 +56,7 @@ class LSTMLayer(jit.ScriptModule):
         for i in range(len(inputs)):
             out, state = self.cell(inputs[i], state)
             outputs += [out]
-        return torch.stack(outputs), state
+        return torch.stack(outputs, dim = 1), state
 
 def script_mlstm(input_size, hidden_size, num_layers = 1, bias=True,
                 batch_first=True, dropout=False, bidirectional=False):

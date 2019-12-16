@@ -19,16 +19,13 @@ class UniRep_mLSTM(nn.Module):
         self.rnn = script_mlstm(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
-    def forward(self, xb, xb_lens, init_hidden):
-        # This is important to do for DataParallel. We need this length when padding the packed sequence again
-        longest_length = xb.size(1)
-
+    def forward(self, xb, init_hidden):
         # Convert indices to embedded vectors
         embedding = self.embed(xb)
 
         # Output from RNN is also packed when given packed
-        out, _ = self.rnn(embedding, init_hidden)
+        out, last_hidden = self.rnn(embedding, init_hidden)
 
         # Linear layer to convert from RNN hidden size -> inference tokens scores
         linear = self.lin(out)
-        return linear
+        return linear, last_hidden
