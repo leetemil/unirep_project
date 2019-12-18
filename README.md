@@ -7,6 +7,7 @@ Repository for project out of course scope on Unirep article.
 - Thesis contract status.
 - Cluster: How greedy can we be during the christmas break?
 - Novo mentors.
+- what figures should we include? RNN? UniRep? More specific figures? Results?
 
 ## TODO
 
