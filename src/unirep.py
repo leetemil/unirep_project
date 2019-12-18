@@ -8,10 +8,10 @@ from mlstm import script_mlstm
 class UniRep(nn.Module):
     def __init__(self, embed_size, hidden_size, num_layers, use_mlstm=False):
         super().__init__()
-                
+
         # mlstm flag
         self.use_mlstm = use_mlstm
-        
+
         # Define parameters
         self.embed_size = embed_size
         self.hidden_size = hidden_size
@@ -19,17 +19,17 @@ class UniRep(nn.Module):
 
         # Define layers
         self.embed = nn.Embedding(NUM_TOKENS, self.embed_size, padding_idx = PADDING_VALUE)
-        
+
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
         if use_mlstm:
           self.rnn = script_mlstm(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
-        
+
         else:
           self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
-        
 
-    def forward(self, xb, hidden):        
+
+    def forward(self, xb, hidden):
         # Convert indices to embedded vectors
         embedding = self.embed(xb)
 
@@ -47,7 +47,7 @@ class UniRep(nn.Module):
         with torch.no_grad():
             embedding = self.embed(xb)
             out, _ = self.rnn(embedding, self.init_hidden(len(xb), device))
-            
+
             return torch.mean(out, dim=1)
 
     def init_hidden(self, batch_size, device):
@@ -55,4 +55,3 @@ class UniRep(nn.Module):
             return [(torch.zeros(batch_size, self.hidden_size, device = device), torch.zeros(batch_size, self.hidden_size, device = device)) for _ in range(self.num_layers)]
         else:
             return None
-        

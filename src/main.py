@@ -20,7 +20,7 @@ NUM_LAYERS = 4
 
 # Training parameters
 EPOCHS = 1000
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 TRUNCATION_WINDOW = 384
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
 PRINT_EVERY = 1
@@ -76,8 +76,11 @@ for e in range(EPOCHS):
     for i, xb in enumerate(protein_dataloader):
         # Hidden state for new batch should be reset to zero
         # Hidden between batches should be the previous hidden state
-        
-        last_hidden = model.init_hidden(len(xb), data_device)
+
+        if MULTI_GPU:
+            last_hidden = model.module.init_hidden(len(xb), data_device)
+        else:
+            last_hidden = model.init_hidden(len(xb), data_device)
 
         for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
             # Take optimizer step in the direction of the gradient and reset gradient
