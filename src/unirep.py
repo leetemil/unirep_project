@@ -3,12 +3,15 @@ from torch import nn
 
 from constants import *
 
-
+from mlstm import script_mlstm
 
 class UniRep(nn.Module):
-    def __init__(self, embed_size, hidden_size, num_layers):
+    def __init__(self, embed_size, hidden_size, num_layers, use_mlstm=False):
         super().__init__()
-
+                
+        # mlstm flag
+        self.use_mlstm = use_mlstm
+        
         # Define parameters
         self.embed_size = embed_size
         self.hidden_size = hidden_size
@@ -16,16 +19,40 @@ class UniRep(nn.Module):
 
         # Define layers
         self.embed = nn.Embedding(NUM_TOKENS, self.embed_size, padding_idx = PADDING_VALUE)
-        self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
+        
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
-    def forward(self, xb, init_hidden):
+        if use_mlstm:
+          self.rnn = script_mlstm(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
+        
+        else:
+          self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
+        
+
+    def forward(self, xb, hidden):        
         # Convert indices to embedded vectors
         embedding = self.embed(xb)
 
-        # Output from RNN is also packed when given packed
-        out, last_hidden = self.rnn(embedding, init_hidden)
+        if self.use_mlstm:
+            # Output from RNN is also packed when given packed
+            out, last_hidden = self.rnn(embedding, [(h.detach(), c.detach()) for h, c in hidden])
+        else:
+            out, last_hidden = self.rnn(embedding, [h.detach() for h in hidden] if hidden else None)
 
         # Linear layer to convert from RNN hidden size -> inference tokens scores
         linear = self.lin(out)
         return linear, last_hidden
+
+    def get_representation(self, xb, device):
+        with torch.no_grad():
+            embedding = self.embed(xb)
+            out, _ = self.rnn(embedding, self.init_hidden(len(xb), device))
+            
+            return torch.mean(out, dim=1)
+
+    def init_hidden(self, batch_size, device):
+        if self.use_mlstm:
+            return [(torch.zeros(batch_size, self.hidden_size, device = device), torch.zeros(batch_size, self.hidden_size, device = device)) for _ in range(self.num_layers)]
+        else:
+            return None
+        

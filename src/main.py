@@ -9,7 +9,6 @@ import torch
 from torch import nn
 
 from unirep import UniRep
-from mlstmunirep import UniRep_mLSTM
 from datahandling import ProteinDataset, getProteinDataLoader
 from constants import *
 
@@ -21,11 +20,11 @@ NUM_LAYERS = 4
 
 # Training parameters
 EPOCHS = 1000
-BATCH_SIZE = 1024
+BATCH_SIZE = 4
 TRUNCATION_WINDOW = 384
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
-PRINT_EVERY = 1000
-SAVE_EVERY = 1000
+PRINT_EVERY = 1
+SAVE_EVERY = 1
 
 # Get hardware information
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,10 +34,7 @@ print(f"Found {NUM_GPUS} GPUs!")
 print("CUDNN version:", torch.backends.cudnn.version())
 
 # Define model
-if MLSTM:
-    model = UniRep_mLSTM(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS)
-else:
-    model = UniRep(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS)
+model = UniRep(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS, use_mlstm=MLSTM)
 
 # Use DataParallel if more than 1 GPU!
 if MULTI_GPU:
@@ -80,11 +76,8 @@ for e in range(EPOCHS):
     for i, xb in enumerate(protein_dataloader):
         # Hidden state for new batch should be reset to zero
         # Hidden between batches should be the previous hidden state
-        if MLSTM:
-            last_hidden = [(torch.zeros(BATCH_SIZE, HIDDEN_SIZE, device = data_device), torch.zeros(BATCH_SIZE, HIDDEN_SIZE, device = data_device)) for _ in range(NUM_LAYERS)]
-        else:
-            # Hidden state is zero if given as None
-            last_hidden = None
+        
+        last_hidden = model.init_hidden(len(xb), data_device)
 
         for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
             # Take optimizer step in the direction of the gradient and reset gradient
@@ -94,10 +87,7 @@ for e in range(EPOCHS):
             trunc_xb = xb[:, start_idx:start_idx + TRUNCATION_WINDOW]
 
             # Forward pass
-            if MLSTM:
-                pred, last_hidden = model(trunc_xb, [(h.detach(), c.detach()) for h, c in last_hidden])
-            else:
-                pred, last_hidden = model(trunc_xb, [h.detach() for h in last_hidden] if last_hidden else None)
+            pred, last_hidden = model(trunc_xb, last_hidden)
 
             # Calculate loss
             true = torch.zeros(trunc_xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
@@ -119,6 +109,7 @@ for e in range(EPOCHS):
         eta = max(0, avg_time * batches_left)
         if (i % PRINT_EVERY) == 0:
             print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
+
 
         # Saving
         if (i % SAVE_EVERY) == 0:
