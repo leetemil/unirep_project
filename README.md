@@ -8,6 +8,8 @@ Repository for project out of course scope on Unirep article.
 - Cluster: How greedy can we be during the christmas break?
 - Novo mentors.
 - what figures should we include? RNN? UniRep? More specific figures? Results?
+- rosetta negative total energy?
+- buried non-polar surface area???
 
 ## TODO
 
