@@ -23,7 +23,7 @@ EPOCHS = 1000
 BATCH_SIZE = 1024
 TRUNCATION_WINDOW = 384
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
-PRINT_EVERY = 1
+PRINT_EVERY = 100
 SAVE_EVERY = 100
 
 # Get hardware information
@@ -70,9 +70,10 @@ for e in range(EPOCHS):
             opt.zero_grad()
 
             trunc_xb = xb[:, start_idx:start_idx + TRUNCATION_WINDOW]
+            mask = (trunc_xb != PADDING_VALUE).to(dtype = torch.float)
 
             # Forward pass
-            pred, last_hidden = model(trunc_xb, last_hidden)
+            pred, last_hidden = model(trunc_xb, last_hidden, mask)
 
             # Calculate loss
             true = torch.zeros(trunc_xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
@@ -93,7 +94,7 @@ for e in range(EPOCHS):
         batches_left = NUM_BATCHES - (i + 1)
         eta = max(0, avg_time * batches_left)
         if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
+            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
 
 
         # Saving

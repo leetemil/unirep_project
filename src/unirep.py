@@ -29,16 +29,17 @@ class UniRep(nn.Module):
             self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
 
 
-    def forward(self, xb, hidden):
+    def forward(self, xb, hidden, mask):
         # Convert indices to embedded vectors
         embedding = self.embed(xb)
 
-        if self.use_mlstm:
-            if hidden is not None:
+        if hidden is not None:
+            if self.use_mlstm:
                 hidden = [(h.detach(), c.detach()) for h, c in hidden]
-            out, last_hidden = self.rnn(embedding, hidden)
-        else:
-            out, last_hidden = self.rnn(embedding, [h.detach() for h in hidden] if hidden else None)
+            else:
+                hidden = [h.detach() for h in hidden]
+
+        out, last_hidden = self.rnn(embedding, hidden, mask)
 
         # Linear layer to convert from RNN hidden size -> inference tokens scores
         linear = self.lin(out)
