@@ -43,7 +43,8 @@ class UniRep(nn.Module):
 
         # Linear layer to convert from RNN hidden size -> inference tokens scores
         linear = self.lin(out)
-        return linear, last_hidden
+        log_likelihoods = nn.functional.log_softmax(linear, dim = 2)
+        return log_likelihoods, last_hidden
 
     def get_representation(self, xb, device):
         with torch.no_grad():

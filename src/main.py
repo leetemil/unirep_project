@@ -13,15 +13,17 @@ from datahandling import ProteinDataset, getProteinDataLoader
 from constants import *
 
 # Options
+MODEL_FILE = Path("model.torch")
+LOAD_MODEL = True
 MLSTM = True
 EMBED_SIZE = 10
-HIDDEN_SIZE = 64
-NUM_LAYERS = 4
+HIDDEN_SIZE = 1024
+NUM_LAYERS = 1
 
 # Training parameters
 EPOCHS = 1000
-BATCH_SIZE = 1024
-TRUNCATION_WINDOW = 384
+BATCH_SIZE = 4
+TRUNCATION_WINDOW = 256
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
 PRINT_EVERY = 100
 SAVE_EVERY = 100
@@ -55,12 +57,26 @@ protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SI
 opt = torch.optim.Adam(model.parameters())
 
 # Define loss function
-criterion = nn.CrossEntropyLoss(ignore_index = PADDING_VALUE)
+criterion = nn.NLLLoss(ignore_index = PADDING_VALUE)
 
-# Train
-for e in range(EPOCHS):
+saved_epoch = 0
+saved_batch = 0
+if LOAD_MODEL and MODEL_FILE.exists():
+    loaded = torch.load(MODEL_FILE)
+    model.load_state_dict(loaded["model_state_dict"])
+    opt.load_state_dict(loaded["optimizer_state_dict"])
+    saved_epoch = loaded["epoch"]
+    saved_batch = loaded["batch"]
+    print("Model loaded succesfully!")
+
+# Resume epoch count from saved_epoch
+for e in range(saved_epoch, EPOCHS):
     epoch_start_time = time.time()
     for i, xb in enumerate(protein_dataloader):
+        # Run through the data until just after the saved batch
+        if i < saved_batch:
+            continue
+
         # Hidden state for new batch should be reset to zero
         last_hidden = None
 
@@ -96,16 +112,15 @@ for e in range(EPOCHS):
         if (i % PRINT_EVERY) == 0:
             print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
 
-
         # Saving
         if (i % SAVE_EVERY) == 0:
             torch.save({
                 "epoch": e,
-                "batch": i,
+                "batch": i + 1,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
                 "loss": loss
-            }, "model.torch")
+            }, MODEL_FILE)
 
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
