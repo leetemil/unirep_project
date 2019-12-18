@@ -20,11 +20,11 @@ NUM_LAYERS = 4
 
 # Training parameters
 EPOCHS = 1000
-BATCH_SIZE = 8
+BATCH_SIZE = 1024
 TRUNCATION_WINDOW = 384
 NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
 PRINT_EVERY = 1
-SAVE_EVERY = 1
+SAVE_EVERY = 100
 
 # Get hardware information
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,19 +41,6 @@ if MULTI_GPU:
     model = nn.DataParallel(model)
 
 model.to(device)
-
-# Apply weight norm on LSTM
-if not MLSTM:
-    if MULTI_GPU:
-        inner_model = model.module
-    else:
-        inner_model = model
-
-    for i in range(inner_model.num_layers):
-        nn.utils.weight_norm(inner_model.rnn, f"weight_ih_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"weight_hh_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"bias_ih_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"bias_hh_l{i}")
 
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
@@ -75,12 +62,7 @@ for e in range(EPOCHS):
     epoch_start_time = time.time()
     for i, xb in enumerate(protein_dataloader):
         # Hidden state for new batch should be reset to zero
-        # Hidden between batches should be the previous hidden state
-
-        if MULTI_GPU:
-            last_hidden = model.module.init_hidden(len(xb), data_device)
-        else:
-            last_hidden = model.init_hidden(len(xb), data_device)
+        last_hidden = None
 
         for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
             # Take optimizer step in the direction of the gradient and reset gradient

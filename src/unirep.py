@@ -3,7 +3,7 @@ from torch import nn
 
 from constants import *
 
-from mlstm import script_mlstm
+from mlstm import mLSTM
 
 class UniRep(nn.Module):
     def __init__(self, embed_size, hidden_size, num_layers, use_mlstm=False):
@@ -23,10 +23,10 @@ class UniRep(nn.Module):
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
         if use_mlstm:
-          self.rnn = script_mlstm(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
+            self.rnn = mLSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
 
         else:
-          self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
+            self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
 
 
     def forward(self, xb, hidden):
@@ -34,8 +34,9 @@ class UniRep(nn.Module):
         embedding = self.embed(xb)
 
         if self.use_mlstm:
-            # Output from RNN is also packed when given packed
-            out, last_hidden = self.rnn(embedding, [(h.detach(), c.detach()) for h, c in hidden])
+            if hidden is not None:
+                hidden = [(h.detach(), c.detach()) for h, c in hidden]
+            out, last_hidden = self.rnn(embedding, hidden)
         else:
             out, last_hidden = self.rnn(embedding, [h.detach() for h in hidden] if hidden else None)
 
@@ -49,9 +50,3 @@ class UniRep(nn.Module):
             out, _ = self.rnn(embedding, self.init_hidden(len(xb), device))
 
             return torch.mean(out, dim=1)
-
-    def init_hidden(self, batch_size, device):
-        if self.use_mlstm:
-            return [(torch.zeros(batch_size, self.hidden_size, device = device), torch.zeros(batch_size, self.hidden_size, device = device)) for _ in range(self.num_layers)]
-        else:
-            return None
