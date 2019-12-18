@@ -1,10 +1,17 @@
 # unirep_project
 Repository for project out of course scope on Unirep article.
 
+## Last christmas questions for Wouter
+- We are considering scaling down on data from ~37 mil to ~22 mil. What do you think? Should we do ~1 mil proteins instead?
+- Large-scale data processing; hardware GPU vs. CPU; too much data vs. too little data; cluster and parallelism. Model parameter explosion, it cannot fit in GPU or memory.
+- Thesis contract status.
+- Cluster: How greedy can we be during the christmas break?
+- Novo mentors.
+
 ## TODO
 
-- [ ] Fetch and load data into Python.
-- [ ] Make dummy model and predict using PyTorch.
+- [x] Fetch and load data into Python.
+- [x] Make dummy model and predict using PyTorch.
 - [ ] Visualize t-SNE. (figure 2 c).
 - [ ] Visualize PCA (figure 2 a).
 - [ ] Visualize t-SNE (figure 2 b).
