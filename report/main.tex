@@ -1,4 +1,4 @@
-\documentclass[a4paper,11pt]{article}
+\documentclass[a4paper,12pt]{article}
 
 \input{packages.tex}
 
@@ -16,7 +16,7 @@
 
 \section{Introduction}
 
-Protein engineering is the active field of design and synthesis of proteins. Proteins are essential to many biological industries, including health-related 
+Proteins are essential to many biological industries, including the medicinal industry and the food industry. Due to proteins' importance in these industries, a lot of effort has been made towards developing new proteins which could be useful for biological processes. The field concerned with design and synthesis of such proteins is known as \textit{protein engineering}. There are two main approaches within protein engineering: directed evolution and rational protein design. The former attempts to find new proteins by simulating natural evolution -- we will not concern ourselves with this approach any further. The latter takes a more direct approach to protein engineering; rational design tries to construct an amino acid sequence given a desired 3-dimensional structure. In this work, we are considering a related problem which could be useful to rational protein design, that is, prediction of structure and properties given an amino acid sequence.
 
 Effective usage of machine learning techniques on the domain of protein engineering has long been sought. For many years, protein engineering has suffered from the lack of a holistic understanding of protein structure and function. Recently, advances in deep learning techniques have brought new hope to this endeavor. With advanced techniques from the field of deep representation learning, machine learning systems may be able to learn rich representations of proteins, without a need for manual feature extraction. Such representations could be highly relevant to downstream tasks within protein engineering.
 
@@ -35,46 +35,114 @@ The remainder of the report presents and discusses the key reproduced results an
 
 \clearpage
 \section{Background}
+\label{section:background}
 
+In this section we first present the main model architectures used in the article. Specifically, the idea and governing principles of Recurrent Neural Networks (RNN) are introduced, giving the necessary knowledge to understand specific variants of RNNs. Then two different RNN models are presented, namely the Long Short-Term Memory (LSTM) and the Multiplicative Recurrent Neural Network (mRNN). Each provide desirable properties, which are finally merged into the multiplicative LSTM (mLSTM), which is the model architecture used in the UniRep article.
+
+As we use a series of downstream tasks to measure the performance of our implementation; these tasks are directly chosen based on the learning tasks and surveyed benchmarks by \cite{rao2019evaluating}. These require an introduction, which will be given here, under section \todo{section}, as well as what performance metrics are used in these tasks.
 % mLSTM:
 % https://arxiv.org/pdf/1609.07959.pdf
 
 \subsection{RNNs}
-    LSTM
-    
-    mLSTM
+Recurrent Neural Networks are modeling networks used mainly for sequential, temporal data, where inputs usually differ in length. 
+There are several ways to work with sequences: we might wish to predict a label for each single character in the sequence, effectively yielding a sequence output of labels; or we wish to predict a single label for the entire sequence. In any case, modelling structures are needed to support the task and typically a variant of the RNN is used.
+
+For some input sequence $\ve{S} = s_1, s_2, \ldots, s_T$ of length $T$ consisting of characters, the RNN processes the input one character $s_t$ at a time (with time step $t \leq T$). In the case of protein sequencing, the time step simply refers to the position in the sequence. In this process, the RNN usually maintains an internal context state that retains information from the sequence up to $t$. In most practical settings, the state is not complex enough to keep a one-to-one representation of the sequence observed so far, and thus needs to effectively prioritize what it will retain or not. By a combination of the current input $s_t$ and this context state, the RNN produces an output, being a prediction of the sequence character at time $t + 1$ is. To do this, the network passes the internal state and input through one or more neuron layers, each with its own parameters.
+
+Viewed as a graph, the RNN is a series of layers (or layered cell structures for more advanced model instances), processing the sequence one character at a time. The parameters of the model is shared across the components of the network, meaning that the parameters are reused at each time step. This enables the model to process sequences of variable length as the model is specified in terms of transitions between characters, rather than on the entire sequence. This has the desirable property that the model is able to generalize to inputs with a previously unseen length. Because parameters are used across different time steps, they are used to learn general rules that work not just at the beginning or end, but across the entire sequence \cite{Goodfellow-et-al-2016}.
+
+In addition, RNN's have the desirable property that the internal state is flexible in terms of learning what context is important and what can be disregarded. However, one disadvantage is that, for simple RNN's, it is difficult to make the model retain important information across long sequences, i.e. the context at some step $t$ will not contain much information from a time step $s << t$. To remedy this, more elaborate architectures have been designed that incorporate specific internal cell states to retain context \cite{graves2012supervised}. Specifically, the LSTM architecture does this, which we discuss in section \todo{section}. The mLSTM architecture used in the UniRep paper is a variation on the LSTM.
+
+Networks that use the same function iteratively on sequenced inputs are typically represented as a recursive formula. A simple example is
+\[ \ve{h}_t = f\prts{\ve{x}_t, \ve{h}_{t - 1}}, \]
+where the context state $\ve{h}_t$ at time $t$ is the result of applying a function $f$ to the input character $\ve{x}_t$ at time $t$ and the previous context state $\ve{h}_{t_1}$. Such representations allow for a simple description that conveys what dependencies there are between inputs, without unrolling the entire recursive structural dependency. Some models might require several such relations to describe it. We will use such representations to more formally describe models.
+
+When moving forward in the graph, at each iteration, the following calculations are done:
+\begin{align*}
+    \ve{a}_t &= \ve{b} + \ve{Wh}_{t - 1} + \ve{Ux}_t\\
+    \ve{h}_t &= f_1 \prts{\ve{a}_t}\\
+    \ve{o}_t &= \ve{c} + \ve{Vh}_t\\
+    \hat{\ve{y}}_t &= f_2 \prts{\ve{o}_t}.
+\end{align*}
+Here, $\ve{W}$ and $\ve{U}$ are the parameters for the previous hidden state $\ve{h}_{t-1}$ and the current input $\ve{x}_t$ and $\ve{b}$ is the bias. In a similar way $\ve{V}$ is the parameters for the current hidden state $\ve{h}_t$ and $\ve{c}$ is a bias. Finally, $f_1$ and $f_2$ are (activation) functions applied to the intermediate results $\ve{a_t}$ and $\ve{o}_t$ to yield the current hidden state and the prediction $\hat{\ve{y}}_t$. This forward pass assumes an RNN where the previous hidden state is passed as input to the next, but other variations exists.
+
+During training, a popular choice is to disregard the model prediction when passing the current input and instead feed the model the true character for the ensuing iteration. This procedure is usually called \textit{teacher forcing}, which ensures that the hidden state is based on a true sequence and not (potentially wrong) model predictions.
+
+The backpropagation in RNN's is no different from 'ordinary' neural networks; the parameters are updated using a gradient-based optimizer, taking advantage of the network operations being differentiable by design. For each model output prediction, a loss in computed with respect to the true label. The gradient of the loss is calculated using the chain rule, with respect to the parameters of the model. This gradient is then used to update the parameters, effectively lowering the error. This procedure is repeated until the loss is sufficiently low, or a similar termination condition is met. The algorithm is in this case referred to as backpropagation through time (BPTT), as each iteration is dependent on the hidden state of the previous iteration. This dependency makes the backward pass sequential, and so it is computationally expensive fo long sequences as it cannot be parallelized. For this reason, a truncated version (TBPTT) is often applied instead, which splits the sequence into a number of smaller sequences, each updated on its own. This has the effect that the backpropagation can be effectively computed across longer sequences, but also that effects spanning across splits are lost to the most. TBPTT is used in the UniRep article experiments.
+
+\subsubsection{LSTM}
+The LSTM architecture is a variant of the RNN which incorporates additional modelling to make the network more persistent across time. The hidden state in simple RNN's described in the previous section have difficulties retaining a context that 'remembers' across longer sequences, i.e. long-term dependencies. One problem is that gradient propagation over long sequences tend to produce very small (vanishing) gradients, effectively nullifying any updates done to the parameters. A partial solution is to apply activation functions that retain derivatives within a stable range so that they do not become to small. This is however an issue if one wants to use the simple RNN for long-term dependencies, as it has been shown that the gradients are much smaller for long-term interaction compares to short-term interaction \cite{Goodfellow-et-al-2016}. It is not enough to restrict the network using activation functions that retain the gradients to a non-vanishing space, as any minor short-term gradient changes will, by its size, dominate long-term gradient changes. Therefore, it is not impossible to learn long-term dependencies, but it is very unlikely \cite{Goodfellow-et-al-2016}.
+
+The LSTM mitigates this issue by being more explicit in its structure, incorporating both a cell layer and a hidden state. These are then used to help the model remember and forget context, without running into vanishing gradients. The structure is more complex than the simple RNN, and this complexity is what helps the LSTM overcome the issue of retaining important context over longer sequences.
+
+\todo{insert figure?}
+
+The LSTM is a gated recurrent network, having four layers that interact at each time step. Most significantly the cell layer, or \textit{cell state} is introduced, which allows information to pass easily between states. A nice analogy is that the cell is the memory of the network. The cell state can be modified by the network through three separate interactions with the other layers. The cell state interactions are regulated by so-called gates, named after their ability to let information flow more or less freely to the cell state \cite{lstmwebsite}.
+
+The first interaction is regulating what the network should forget. This is called the forget-gate. This is important, as some information might loose its relevance once a certain step in the sequence is surpassed. In such a case, the network should not use its cell state to retain this information any more. Specifically, the previous hidden state $\ve{h}_{t-1}$ (which is different from the cell state) and the current input $\ve{x}_t$ are taken as inputs and fed to the forget-gate, which then passes the concatenation of the two inputs into a linear layer and applied a sigmoid activation to produce an outcome between 0 and 1 for each dimension of the cell state. This outcome represents how much information should be kept (a value close to 1) and how much should be forgotten (a value close to 0).
+
+The second interaction is what new information should be remembered. This is done by first deciding what values should be updated, and then what they should be updated with. Both are computed based on the previous hidden state and the current input. These are separate, as one acts as a gate on each dimension (what dimensions should be updated), while the second acts as the information itself.
+
+% \[ f_t = \sigma \prts{\ve{W}_f \cdot \brts{\ve{h}_t, \ve{x}_t} + \ve{b}_f} \]
+
+The third interaction is producing an output. 
+
+\todo{bidirection lstm?} disadvantage with simple RNN: directional in time, going through the sequence from left to right. In sequence labeling tasks where the entire sequence is known, such as in protein sequencing, we would like to take advantage of this by incorporating bidirectional information.
+
+\subsubsection{mRNN}
+\subsubsection{mLSTM}
 
 \subsection{TAPE}
 \subsection{Performance Metrics}
 
 \clearpage
 \section{The UniRep model}
+In this section, we review the UniRep article in detail. We explain the core motivations behind the work, as well as its main contribution. We then explain the results that UniRep achieved and discuss the model's strengths and weaknesses \todo{dunno about this sentence}.
 
 \subsection{Motivation}
+The motivation behind UniRep's approach stems from similar ideas from the field of natural language processing (NLP). In both fields, a huge amount of unlabeled data is available, while labeled data is sparse in comparison. In NLP, a huge amount of text is freely available, both in datasets and publicly on the internet, but a very small percentage of this data is labeled. In protein engineering, a vast amount of protein sequences are known, but their properties (labels) are only sparsely annotated.
 
-Unsupervised learning
+Unsupervised representation learning within NLP has become essential and ubiquitous for downstream tasks. Using representations of words (in the form of high-dimensional vectors) has become so common, that large industrial-sized models are trained solely to learn a useful mapping from word to vector. Examples include models such as BERT and ELMo \todo{cite bert and elmo}. It has been shown that using these powerful pre-trained models as a preliminary step in other natural language learning tasks leads to significantly improved performance. The theory is that the representations capture essential features of the words, which can be used during inference in a neural network.
 
-Lots of unlabelled protein data
-
-Representation learning
-
-Automatic feature extraction
+The motivation behind UniRep should now be clear. Given that the use of unsupervised representation learning models has lead to impressive results in NLP, the hope is that a similar model working on proteins could do the same for protein engineering. Such a model would be able to perform automatic feature extraction, similar to how NLP models extract features from words. If a representation learning model could become the "BERT of proteins", it could lead to incredible advances within the protein machine learning field.
 
 \subsection{Main contribution}
+In order to develop the above-mentioned representation learning model, the authors of the UniRep article turned to tools that are also used within natural language processing. These are recurrent neural networks (RNNs), which we discussed earlier in section \ref{section:background}. RNNs are used extensively within NLP, since their recurrent nature makes them ideal to handle variable-length data. In the field of NLP, the variable-length data is in the form of text, represented as sequences of words or, more rarely, sequences of characters.
 
-Protein feature predictions
+Within protein machine learning, the analogy for this is considering each protein as a sequence of amino acids. In some ways, this setting should make machine learning problems simpler than in the NLP setting. After all, there are relatively few amino acids, while there are hundreds of thousands of English words. On the other hand however, protein machine learning seems more daunting. Natural language sentences are rarely more than a few dozens words long, while many proteins are longer than 1000 amino acids. Also, it could be argued that natural language is structured in a relatively simple way, while the structure of proteins is difficult to grasp and model. Despite these challenges, RNNs as a means to produce a representation still seems the most appropriate approach.
 
-Universal protein feature extraction model
+Specifically, the authors of UniRep used the mLSTM variant of the LSTM recurrent network architecture. They constructed three distinct models, following roughly the same architecture principles, varying the models mostly in terms of number of parameters. All three models start with a trainable embedding layer, which maps each amino acid to a 10-dimensional vector. Following this, the models have a number of mLSTM layers. The two smaller models have 4 mLSTM layers, with respectively 64 and 256 hidden units, while the biggest model just has 1 mLSTM layer with 1900 hidden units. The outputs of the mLSTM are then lead into a linear layer with softmax activation, in order to produce a probability distribution for each amino acid. A cross-entropy loss is then calculated, where the target is the amino acid following the amino acid on which the prediction was made. In essence, the model is trained to predict the next amino acid in the protein sequence, given all previous amino acids in the sequence. This is very similar to the equivalent task in NLP, which is prediction of the next word in a body of text. Such unsupervised tasks are often used in representation learning to force the model to create a good representation of the input data -- the assumption here being, that a model that is good at predicting the next element of a sequence must also produce a good representation.
 
-Enabling protein engineering prediction task
+The model architecture does not produce a representation on its own. In order to extract the representation of a sequence, the hidden states of the mLSTM across the sequence length dimension are averaged, while the remaining linear layer is discarded. All of the hidden states, each of dimension 64, 256 or 1900 depending on the model, are thus reduced to a single vector of the same size as a single hidden state. This is the representation that the authors use and specifically the 1900-dimensional one is the one that they call "UniRep". This approach is reminiscent of a similar approach in NLP, known as auto-encoding, although there are some differences \todo{Expand on auto-encoders?}. The rationale for producing the representation in this way is that the model will "integrat[e] information across distant amino acids" \cite[p. 9]{alley2019unified}.
 
-\subsection{Discussion and results}
+\subsection{Results}
 
-The unirep models (64, 256, 1900) \cite{alley2019unified}
+The author's of the UniRep article has developed a model that they claim provides a "semantically rich representation" of proteins. In order to found this claim, the authors provide a multitude of experiments and results that show the good properties of the UniRep representation. The experiments include pure analysis on the representation itself, as well as results obtained by using UniRep in other downstream learning tasks.
+
+Some of the first results presented in the paper have to do with distances in the latent space of the representations. By using a special kind of dimension reduction, known as t-SNE, on the representations of proteins originating from different organisms, a clear clustering of the representation can be seen \cite[fig. 2b]{alley2019unified}. This may suggest that UniRep is able to capture distinctive features that differentiate organisms from each other. The authors also examine the space of embedded amino acids, by performing PCA on the embedded vectors. The embedded vectors seem to congregate in clusters that relate to certain properties of the amino acids, such as their charge.
+
+Interestingly, one of the coordinates of the model's mLSTM hidden state seems to correlate with secondary structure of the protein. As the mLSTM progresses through the amino acid sequence, this coordinate's value correlates positively with helix structure and negatively with sheet structure \cite[fig. 2e]{alley2019unified}. This is quite strong evidence that the mLSTM's hidden state is able to capture information about proteins' secondary structure, which may help the final UniRep representation to characterize proteins.
+
+In order to perform downstream task learning, the authors concatenated the UniRep representation (the mean of the hidden states across the entire sequence) with the last hidden state and the last cell state of the mLSTM. They denote this combination of states as "UniRep Fusion". Using UniRep Fusion on downstream learning tasks, the authors were able to predict protein features, such as stability, with better scores than alternative approaches, like negative Rosetta total energy.
+
+In essence, UniRep provides automatic feature extraction from proteins, in a way that has been shown by the authors to be useful for prediction tasks. This contribution could allow cost-savings when searching the protein space for new potential proteins for various applications. By fine-tuning UniRep on a smaller region of the protein space ("evo-tuning"), the authors were able to produce a model which is, according to their estimates, two orders of magnitude more cost-efficient for protein engineering tasks. The idea is to use UniRep's predictions to guide the protein exploration, thus focusing on the proteins that are promising and discarding the ones that are not. In this way, hopefully fewer proteins have to be synthesized before a usable candidate protein is found.
+
+\subsection{Discussion}
+All in all, the UniRep model appears to be a useful tool in the growing field of protein machine learning. The idea of creating smart representations of proteins is not unique \todo{cite stuff from blog}, but the approach taken to solve this problem in the UniRep model is.
+
+However, some of the design choices of the UniRep model are questionable. The core idea behind UniRep is extracting information from hidden states that are obtained by a recurrent neural network running through the protein sequence. In itself, this idea makes sense, since the hidden state of the recurrent network must in some way encode the protein's features, if the later linear layer should have any chance of predicting the next amino acid. However, the approach taken to extract information from these hidden states seems primitive. A simple mean across the sequence's hidden states does not seem like an operation which would necessarily preserve the essential features of the entire sequence.
+
+Take for example the coordinate of the hidden state that predicted whether or not an amino acid was located in a helix or sheet. 
 
 Unirep fusion - where is it better
 
 Question: Average of hidden states... Why?
+
+Question: Truncated backpropogation but long-range dependencies?
+
+Mean destroys structure neuron's information
+
+No loss reported on model
 
 \clearpage
 \section{Reproduction of UniRep}
