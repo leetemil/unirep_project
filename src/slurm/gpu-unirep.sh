@@ -4,11 +4,12 @@
 # we run on the gpu partition and we allocate 4 titan x
 #SBATCH -p gpu --gres=gpu:titanx:4
 #Note that a program will be killed once it exceeds this time!
-#SBATCH --time=0:05:00
+#SBATCH --time=$1-$2:$3:00
 
 # Info:
 date -Is
 hostname
+echo "Maximum running time: $1-$2:$3:00"
 echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
 # Script:
