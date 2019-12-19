@@ -107,7 +107,7 @@ for e in range(saved_epoch, config.epochs):
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
                 "loss": loss
-            }, MODEL_FILE)
+            }, config.save_path)
 
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
