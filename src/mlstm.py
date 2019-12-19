@@ -1,7 +1,6 @@
 import warnings
 from collections import namedtuple
 from typing import List, Tuple
-import numbers
 
 import torch
 from torch import nn
@@ -9,7 +8,7 @@ from torch import Tensor
 from torch.nn import Parameter
 from torch import jit
 
-# From https://github.com/guillitte/pytorch-sentiment-neuron/blob/master/models.py
+# Inspired by https://github.com/guillitte/pytorch-sentiment-neuron/blob/master/models.py
 class mLSTMCellJIT(jit.ScriptModule):
     def __init__(self, input_size, hidden_size):
         super().__init__()

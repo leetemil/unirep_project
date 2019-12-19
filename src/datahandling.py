@@ -17,16 +17,16 @@ class ProteinDataset(Dataset):
         super().__init__()
         self.device = device
         with open(file) as f:
-            seqs = f.lines()
+            seqs = f.readlines()
 
-        list_seqs = map(lambda x: list(x) + [EOS], seqs)
+        list_seqs = map(lambda x: list(x[:-1]) + [EOS], seqs)
         encodedSeqs = map(lambda x: seq2idx(x, self.device), list_seqs)
         self.seqs = list(encodedSeqs)
 
     def __len__(self):
-        len(self.seqs)
+        return len(self.seqs)
 
-    def __getitem(self, i):
+    def __getitem__(self, i):
         return self.seqs[i]
 
 class IterProteinDataset(IterableDataset):
@@ -45,7 +45,7 @@ class IterProteinDataset(IterableDataset):
     def subsample(self, n, outfile):
         str_seqs = self.get_str_seqs()
         for i, _ in enumerate(str_seqs):
-            if i % 1000 == 0:
+            if i % 10000 == 0:
                 print(i, end = "\r")
 
         count = i + 1
@@ -56,6 +56,8 @@ class IterProteinDataset(IterableDataset):
 
         with open(outfile, "w") as f:
             for i, seq in enumerate(str_seqs):
+                if i % 10000 == 0:
+                    print(i, end = "\r")
                 if i in rand_idx:
                     f.write(seq + "\n")
 
@@ -65,8 +67,20 @@ class IterProteinDataset(IterableDataset):
         encodedSeqs = map(lambda x: seq2idx(x, self.device), list_seqs)
         return encodedSeqs
 
+    def __len__(self):
+        return NUM_SEQUENCES
+
+def getProteinDataset(file, device = None):
+    extension = file.suffix.lower()
+    if extension == ".txt":
+        return ProteinDataset(file, device)
+    elif extension == ".fasta":
+        return IterProteinDataset(file, device)
+    else:
+        raise ValueError("Unsupported data file.")
+
 def sequenceCollateFn(sequences):
     return torch.nn.utils.rnn.pad_sequence(sequences, padding_value = PADDING_VALUE, batch_first = True)
 
 def getProteinDataLoader(proteinDataset, batch_size = 32):
-    return DataLoader(proteinDataset, batch_size = batch_size, collate_fn = sequenceCollateFn)
+    return DataLoader(proteinDataset, shuffle = False if isinstance(proteinDataset, IterableDataset) else False, batch_size = batch_size, collate_fn = sequenceCollateFn)
