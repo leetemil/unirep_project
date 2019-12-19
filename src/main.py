@@ -91,7 +91,7 @@ for e in range(saved_epoch, config.epochs):
             loss.backward()
 
         # Printing progress
-        if (i % config.print_every) == 0:
+        if ((i + 1) % config.print_every) == 0:
             sequences_processed = (i + 1) * config.batch_size
             time_taken = time.time() - epoch_start_time
             avg_time = time_taken / (i + 1)
@@ -100,7 +100,7 @@ for e in range(saved_epoch, config.epochs):
             print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(protein_dataset):6.2f}%")
 
         # Saving
-        if not config.save_path.is_dir() and (i % config.save_every) == 0:
+        if not config.save_path.is_dir() and ((i + 1) % config.save_every) == 0:
             torch.save({
                 "epoch": e,
                 "batch": i + 1,

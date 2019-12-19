@@ -14,7 +14,7 @@ echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
 # Script:
 # -u: Unbuffered output
-python3 -u main.py
+python3 -u main.py ../data/preprocessed/proteins102400.txt --save_path model100batches.torch
 
 # End
 date -Is
