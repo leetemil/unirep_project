@@ -13,7 +13,7 @@ echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
 # Script:
 # -u: Unbuffered output
-python3 -u main.py $@
+python3 -u main.py "$@"
 
 # End
 date -Is
