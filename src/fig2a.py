@@ -3,7 +3,7 @@ from torch import nn
 from pathlib import Path
 import numpy as np
 
-from datahandling import ProteinDataset, getProteinDataLoader, idx2seq, seq2idx
+from datahandling import ProteinDataset, IterProteinDataset, getProteinDataLoader, idx2seq, seq2idx
 from constants import *
 from unirep import UniRep
 
@@ -57,7 +57,7 @@ if MULTI_GPU:
   od = OrderedDict()
   for key, value in modulestate.items():
     od[key[7:]] = value
-  
+
   modulestate = od
 
 model.load_state_dict(modulestate)
@@ -111,4 +111,3 @@ zs = pca_acids[:, 2]
 
 ax.scatter(xs, ys, zs, c=colors, s=50)
 plt.show()
-

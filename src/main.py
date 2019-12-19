@@ -9,7 +9,7 @@ import torch
 from torch import nn
 
 from unirep import UniRep
-from datahandling import ProteinDataset, getProteinDataLoader
+from datahandling import ProteinDataset, IterProteinDataset, getProteinDataLoader
 from constants import *
 
 # Options
@@ -46,7 +46,8 @@ model.to(device)
 
 # Load data
 # data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
-data_file = Path("../data/UniRef50/uniref50.fasta")
+# data_file = Path("../data/UniRef50/uniref50.fasta")
+data_file = Path("../data/preprocessed/proteins102400.txt")
 
 # If using DataParallel, data may be given from CPU (it is automatically distributed to the GPUs)
 data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
@@ -58,6 +59,10 @@ opt = torch.optim.Adam(model.parameters())
 
 # Define loss function
 criterion = nn.NLLLoss(ignore_index = PADDING_VALUE)
+
+# Count number of parameters
+num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print("Model has {num_params} parameters.")
 
 saved_epoch = 0
 saved_batch = 0

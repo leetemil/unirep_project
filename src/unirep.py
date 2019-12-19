@@ -3,7 +3,7 @@ from torch import nn
 
 from constants import *
 
-from mlstm import mLSTM
+from mlstm import mLSTMJIT
 
 class UniRep(nn.Module):
     def __init__(self, embed_size, hidden_size, num_layers, use_mlstm=False):
@@ -23,11 +23,10 @@ class UniRep(nn.Module):
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
         if use_mlstm:
-            self.rnn = mLSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
+            self.rnn = mLSTMJIT(self.embed_size, self.hidden_size, num_layers = self.num_layers)
 
         else:
             self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
-
 
     def forward(self, xb, hidden, mask):
         # Convert indices to embedded vectors
