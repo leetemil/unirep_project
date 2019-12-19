@@ -57,6 +57,8 @@ if config.load_path.is_file():
     print("Model loaded succesfully!")
 
 # Resume epoch count from saved_epoch
+accumulated_loss = 0
+loss_count = 0
 for e in range(saved_epoch, config.epochs):
     epoch_start_time = time.time()
     for i, xb in enumerate(protein_dataloader):
@@ -86,18 +88,23 @@ for e in range(saved_epoch, config.epochs):
             pred = pred.flatten(0, 1)
             true = true.flatten()
             loss = criterion(pred, true)
+            accumulated_loss += loss.item()
+            loss_count += 1
 
             # Calculate gradient which minimizes loss
             loss.backward()
 
         # Printing progress
         if ((i + 1) % config.print_every) == 0:
+            avg_loss = accumulated_loss / loss_count
+            accumulated_loss = 0
+            loss_count = 0
             sequences_processed = (i + 1) * config.batch_size
             time_taken = time.time() - epoch_start_time
             avg_time = time_taken / (i + 1)
             batches_left = (len(protein_dataset) / config.batch_size) - (i + 1)
             eta = max(0, avg_time * batches_left)
-            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(protein_dataset):6.2f}%")
+            print(f"Epoch: {e:3} Batch: {i + 1:6} Loss: {avg_loss:5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(protein_dataset):6.2f}%")
 
         # Saving
         if not config.save_path.is_dir() and ((i + 1) % config.save_every) == 0:
