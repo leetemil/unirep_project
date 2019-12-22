@@ -102,7 +102,7 @@ for e in range(saved_epoch, config.epochs):
 
         # Printing progress
         if ((i + 1) % config.print_every) == 0:
-            avg_loss = batch_loss / batch_loss_count
+            avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else -1
             batch_loss = 0
             loss_count = 0
             sequences_processed = (i + 1) * config.batch_size
@@ -122,7 +122,7 @@ for e in range(saved_epoch, config.epochs):
                 "loss": loss
             }, config.save_path)
 
-    avg_loss = epoch_loss / epoch_loss_count
+    avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else -1
     epoch_loss = 0
     epoch_loss_count = 0
     epoch_end_time = time.time()
