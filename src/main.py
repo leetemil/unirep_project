@@ -104,7 +104,7 @@ for e in range(saved_epoch, config.epochs):
         if ((i + 1) % config.print_every) == 0:
             avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else -1
             batch_loss = 0
-            loss_count = 0
+            batch_loss_count = 0
             sequences_processed = (i + 1) * config.batch_size
             time_taken = time.time() - epoch_start_time
             avg_time = time_taken / (i + 1)
