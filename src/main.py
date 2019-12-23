@@ -125,9 +125,14 @@ for e in range(saved_epoch, config.epochs):
                 "loss": loss
             }, config.save_path)
 
+    cuda_mem_allocated = 0
+    if torch.cuda.is_available:
+        cuda_mem_allocated = torch.cuda.max_memory_allocated() / 1024
+        torch.cuda.reset_max_memory_allocated()
+
     avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else -1
     epoch_loss = 0
     epoch_loss_count = 0
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
-    print(f"Epoch {e}: average loss: {avg_loss:5.4f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours.")
+    print(f"Epoch {e}: average loss: {avg_loss:5.4f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
