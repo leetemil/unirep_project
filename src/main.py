@@ -4,6 +4,7 @@ from config import config
 from pathlib import Path
 import time
 import warnings
+warnings.filterwarnings("ignore", category = UserWarning)
 
 import torch
 from torch import nn
