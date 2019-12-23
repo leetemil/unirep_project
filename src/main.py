@@ -37,8 +37,10 @@ model.to(device)
 # If using DataParallel, data may be given from CPU (it is automatically distributed to the GPUs)
 data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
 
+print("Loading data...")
 protein_dataset = getProteinDataset(config.data, data_device)
 protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = config.batch_size)
+print("Data loaded!")
 
 # Define optimizer
 opt = torch.optim.Adam(model.parameters())
@@ -60,6 +62,7 @@ epoch_loss = 0
 epoch_loss_count = 0
 batch_loss = 0
 batch_loss_count = 0
+print("Training...")
 # Resume epoch count from saved_epoch
 for e in range(saved_epoch, config.epochs):
     epoch_start_time = time.time()
@@ -78,7 +81,7 @@ for e in range(saved_epoch, config.epochs):
             opt.zero_grad()
 
             trunc_xb = xb[:, start_idx:start_idx + config.truncation_window]
-            mask = (trunc_xb != PADDING_VALUE).to(dtype = torch.float)
+            mask = (trunc_xb != PADDING_VALUE).to(dtype = torch.long)
 
             # Forward pass
             pred, last_hidden = model(trunc_xb, last_hidden, mask)

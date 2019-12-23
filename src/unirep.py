@@ -41,19 +41,29 @@ class UniRep(nn.Module):
             elif self.rnn_type == "GRU":
                 hidden = hidden.detach()
 
-        out, last_hidden = self.rnn(embedding, hidden, mask)
+        if self.rnn_type == "mLSTM":
+            out, last_hidden = self.rnn(embedding, hidden, mask)
+        else:
+            out, last_hidden = self.rnn(embedding, hidden)
 
         # Linear layer to convert from RNN hidden size -> inference tokens scores
         linear = self.lin(out)
         log_likelihoods = nn.functional.log_softmax(linear, dim = 2)
         return log_likelihoods, last_hidden
 
-    def get_representation(self, xb, device):
+    def get_representations(self, xb, mask):
         with torch.no_grad():
             embedding = self.embed(xb)
-            out, _ = self.rnn(embedding, self.init_hidden(len(xb), device))
+            hidden = None
+            if self.rnn_type == "mLSTM":
+                out, _ = self.rnn(embedding, hidden, mask)
+            else:
+                out, _ = self.rnn(embedding, hidden)
 
-            return torch.mean(out, dim=1)
+            mask = mask.unsqueeze(-1)
+            masked_out = out * mask
+            representations = masked_out.sum(dim = 1) / mask.sum(dim = 1)
+            return representations
 
     def summary(self):
         num_params = sum(p.numel() for p in self.parameters())
