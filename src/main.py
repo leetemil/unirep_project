@@ -129,7 +129,7 @@ for e in range(saved_epoch, config.epochs):
 
     cuda_mem_allocated = 0
     if torch.cuda.is_available:
-        cuda_mem_allocated = torch.cuda.max_memory_allocated() / 1024
+        cuda_mem_allocated = torch.cuda.max_memory_allocated() / (1024 * 1024)
         torch.cuda.reset_max_memory_allocated()
 
     avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else float("inf")
