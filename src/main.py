@@ -63,6 +63,7 @@ epoch_loss = 0
 epoch_loss_count = 0
 batch_loss = 0
 batch_loss_count = 0
+best_loss = float("inf")
 print("Training...")
 # Resume epoch count from saved_epoch
 for e in range(saved_epoch, config.epochs):
@@ -123,8 +124,16 @@ for e in range(saved_epoch, config.epochs):
                 "batch": i + 1,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
-                "loss": loss
+                "loss": loss.item()
             }, config.save_path)
+            if loss.item() < best_loss:
+                torch.save({
+                    "epoch": e,
+                    "batch": i + 1,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": opt.state_dict(),
+                    "loss": loss.item()
+                }, config.save_path.with_suffix(".best"))
 
     cuda_mem_allocated = 0
     if torch.cuda.is_available:
