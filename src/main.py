@@ -107,7 +107,7 @@ for e in range(saved_epoch, config.epochs):
 
         # Printing progress
         if ((i + 1) % config.print_every) == 0:
-            avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else -1
+            avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else float("inf")
             batch_loss = 0
             batch_loss_count = 0
             sequences_processed = (i + 1) * config.batch_size
@@ -126,23 +126,24 @@ for e in range(saved_epoch, config.epochs):
                 "optimizer_state_dict": opt.state_dict(),
                 "loss": loss.item()
             }, config.save_path)
-            if loss.item() < best_loss:
-                torch.save({
-                    "epoch": e,
-                    "batch": i + 1,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": opt.state_dict(),
-                    "loss": loss.item()
-                }, config.save_path.with_suffix(".best"))
 
     cuda_mem_allocated = 0
     if torch.cuda.is_available:
         cuda_mem_allocated = torch.cuda.max_memory_allocated() / 1024
         torch.cuda.reset_max_memory_allocated()
 
-    avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else -1
+    avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else float("inf")
     epoch_loss = 0
     epoch_loss_count = 0
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
+    if avg_loss < best_loss:
+        torch.save({
+            "epoch": e,
+            "batch": i + 1,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": opt.state_dict(),
+            "loss": avg_loss
+        }, config.save_path.with_suffix(".best"))
+
     print(f"Epoch {e}: average loss: {avg_loss:5.4f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
