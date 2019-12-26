@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 
-
 # Options
 MLSTM = False
 EMBED_SIZE = 10
@@ -51,14 +50,14 @@ if not MLSTM:
 d = torch.load('../data/models/model_LSTM_notrunc.torch', map_location=torch.device('cpu'))
 modulestate = d['model_state_dict']
 
-if MULTI_GPU:
-  # remove module from multi gpu dict
-  from collections import OrderedDict
-  od = OrderedDict()
-  for key, value in modulestate.items():
-    od[key[7:]] = value
-  
-  modulestate = od
+if True:
+    # remove module from multi gpu dict
+    from collections import OrderedDict
+    od = OrderedDict()
+    for key, value in modulestate.items():
+        od[key[7:]] = value
+
+    modulestate = od
 
 model.load_state_dict(modulestate)
 
@@ -81,28 +80,28 @@ FWY = 'purple'
 HKR = 'salmon'
 
 colors = [
-  AILMV, # A
-  CNQST, # C
-  DE, # D
-  DE, # E
-  FWY, # F
-  GP, # G
-  HKR, # H
-  AILMV, # I
-  HKR, # K
-  AILMV, # L
-  AILMV, # M
-  CNQST, # N
-  'white', # O
-  GP, # P
-  CNQST, # Q
-  HKR, # R
-  CNQST, # S
-  CNQST, # T
-  'white',# U
-  AILMV, # V
-  FWY, # W
-  FWY, # Y
+    AILMV, # A
+    CNQST, # C
+    DE, # D
+    DE, # E
+    FWY, # F
+    GP, # G
+    HKR, # H
+    AILMV, # I
+    HKR, # K
+    AILMV, # L
+    AILMV, # M
+    CNQST, # N
+    'white', # O
+    GP, # P
+    CNQST, # Q
+    HKR, # R
+    CNQST, # S
+    CNQST, # T
+    'white',# U
+    AILMV, # V
+    FWY, # W
+    FWY, # Y
 ]
 
 xs = pca_acids[:, 0]
@@ -111,4 +110,3 @@ zs = pca_acids[:, 2]
 
 ax.scatter(xs, ys, zs, c=colors, s=50)
 plt.show()
-
