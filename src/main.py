@@ -1,93 +1,92 @@
+# Command-line arguments before anything else
+from config import config
+
 from pathlib import Path
 import time
 import warnings
-
-# Ignore warning about contiguous memory
 warnings.filterwarnings("ignore", category = UserWarning)
 
 import torch
 from torch import nn
 
 from unirep import UniRep
-from datahandling import ProteinDataset, getProteinDataLoader
+from datahandling import getProteinDataset, getProteinDataLoader
 from constants import *
-
-# Options
-MLSTM = True
-EMBED_SIZE = 10
-HIDDEN_SIZE = 64
-NUM_LAYERS = 4
-
-# Training parameters
-EPOCHS = 1000
-BATCH_SIZE = 4
-TRUNCATION_WINDOW = 384
-NUM_BATCHES = 1 + (NUM_SEQUENCES // BATCH_SIZE)
-PRINT_EVERY = 1
-SAVE_EVERY = 1
 
 # Get hardware information
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_GPUS = torch.cuda.device_count()
 MULTI_GPU = NUM_GPUS > 1
-print(f"Found {NUM_GPUS} GPUs!")
-print("CUDNN version:", torch.backends.cudnn.version())
+if NUM_GPUS > 0:
+    print(f"Found {NUM_GPUS} GPUs")
+    print("CUDNN version:", torch.backends.cudnn.version())
+else:
+    print("Running on CPU")
 
 # Define model
-model = UniRep(EMBED_SIZE, HIDDEN_SIZE, NUM_LAYERS, use_mlstm=MLSTM)
+model = UniRep(config.rnn, config.embed_size, config.hidden_size, config.num_layers)
 
-# Use DataParallel if more than 1 GPU!
+# Print model information
+print(model.summary())
+
+# Use DataParallel if more than 1 GPU
 if MULTI_GPU:
     model = nn.DataParallel(model)
 
 model.to(device)
 
-# Apply weight norm on LSTM
-if not MLSTM:
-    if MULTI_GPU:
-        inner_model = model.module
-    else:
-        inner_model = model
-
-    for i in range(inner_model.num_layers):
-        nn.utils.weight_norm(inner_model.rnn, f"weight_ih_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"weight_hh_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"bias_ih_l{i}")
-        nn.utils.weight_norm(inner_model.rnn, f"bias_hh_l{i}")
-
-# Load data
-# data_file = Path("../data/dummy/uniref-id_UniRef50_A0A007ORid_UniRef50_A0A009DWD5ORid_UniRef50_A0A009D-.fasta")
-data_file = Path("../data/UniRef50/uniref50.fasta")
-
 # If using DataParallel, data may be given from CPU (it is automatically distributed to the GPUs)
 data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
-protein_dataset = ProteinDataset(data_file, data_device)
-protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = BATCH_SIZE)
+
+print("Loading data...")
+protein_dataset = getProteinDataset(config.data, data_device)
+protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = config.batch_size)
+print("Data loaded!")
 
 # Define optimizer
 opt = torch.optim.Adam(model.parameters())
 
 # Define loss function
-criterion = nn.CrossEntropyLoss(ignore_index = PADDING_VALUE)
+criterion = nn.NLLLoss(ignore_index = PADDING_VALUE)
 
-# Train
-for e in range(EPOCHS):
+saved_epoch = 0
+saved_batch = 0
+if config.load_path.is_file():
+    loaded = torch.load(config.load_path)
+    model.load_state_dict(loaded["model_state_dict"])
+    opt.load_state_dict(loaded["optimizer_state_dict"])
+    saved_epoch = loaded["epoch"]
+    saved_batch = loaded["batch"]
+    print("Model loaded succesfully!")
+
+epoch_loss = 0
+epoch_loss_count = 0
+batch_loss = 0
+batch_loss_count = 0
+best_loss = float("inf")
+print("Training...")
+# Resume epoch count from saved_epoch
+for e in range(saved_epoch, config.epochs):
     epoch_start_time = time.time()
     for i, xb in enumerate(protein_dataloader):
-        # Hidden state for new batch should be reset to zero
-        # Hidden between batches should be the previous hidden state
-        
-        last_hidden = model.init_hidden(len(xb), data_device)
+        # Run through the data until just after the saved batch
+        if saved_batch > 0:
+            saved_batch -= 1
+            continue
 
-        for start_idx in range(0, xb.size(1), TRUNCATION_WINDOW):
+        # Hidden state for new batch should be reset to zero
+        last_hidden = None
+
+        for start_idx in range(0, xb.size(1), config.truncation_window):
             # Take optimizer step in the direction of the gradient and reset gradient
             opt.step()
             opt.zero_grad()
 
-            trunc_xb = xb[:, start_idx:start_idx + TRUNCATION_WINDOW]
+            trunc_xb = xb[:, start_idx:start_idx + config.truncation_window]
+            mask = (trunc_xb != PADDING_VALUE).to(dtype = torch.long)
 
             # Forward pass
-            pred, last_hidden = model(trunc_xb, last_hidden)
+            pred, last_hidden = model(trunc_xb, last_hidden, mask)
 
             # Calculate loss
             true = torch.zeros(trunc_xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
@@ -98,29 +97,53 @@ for e in range(EPOCHS):
             true = true.flatten()
             loss = criterion(pred, true)
 
+            epoch_loss += loss.item()
+            epoch_loss_count += 1
+            batch_loss += loss.item()
+            batch_loss_count += 1
+
             # Calculate gradient which minimizes loss
             loss.backward()
 
         # Printing progress
-        sequences_processed = (i + 1) * BATCH_SIZE
-        time_taken = time.time() - epoch_start_time
-        avg_time = (time_taken) / (i + 1)
-        batches_left = NUM_BATCHES - (i + 1)
-        eta = max(0, avg_time * batches_left)
-        if (i % PRINT_EVERY) == 0:
-            print(f"Epoch: {e:3} Batch: {i:6} Loss: {loss.item():5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:5.2f} progress: {100 * sequences_processed / NUM_SEQUENCES:6.2f}%")
-
+        if ((i + 1) % config.print_every) == 0:
+            avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else float("inf")
+            batch_loss = 0
+            batch_loss_count = 0
+            sequences_processed = (i + 1) * config.batch_size
+            time_taken = time.time() - epoch_start_time
+            avg_time = time_taken / (i + 1)
+            batches_left = (len(protein_dataset) / config.batch_size) - (i + 1)
+            eta = max(0, avg_time * batches_left)
+            print(f"Epoch: {e:3} Batch: {i + 1:6} Loss: {avg_loss:5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(protein_dataset):6.2f}%")
 
         # Saving
-        if (i % SAVE_EVERY) == 0:
+        if not config.save_path.is_dir() and ((i + 1) % config.save_every) == 0:
             torch.save({
                 "epoch": e,
-                "batch": i,
+                "batch": i + 1,
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
-                "loss": loss
-            }, "model.torch")
+                "loss": loss.item()
+            }, config.save_path)
 
+    cuda_mem_allocated = 0
+    if torch.cuda.is_available:
+        cuda_mem_allocated = torch.cuda.max_memory_allocated() / (1024 * 1024)
+        torch.cuda.reset_max_memory_allocated()
+
+    avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else float("inf")
+    epoch_loss = 0
+    epoch_loss_count = 0
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
-    print(f"Epoch {e} with {i + 1} batches took {epoch_time / 3600:.2f} hours.")
+    if avg_loss < best_loss:
+        torch.save({
+            "epoch": e,
+            "batch": i + 1,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": opt.state_dict(),
+            "loss": avg_loss
+        }, config.save_path.with_suffix(".best"))
+
+    print(f"Epoch {e}: average loss: {avg_loss:5.4f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
