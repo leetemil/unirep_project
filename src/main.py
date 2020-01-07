@@ -137,7 +137,7 @@ for e in range(saved_epoch, config.epochs):
     epoch_loss_count = 0
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
-    if avg_loss < best_loss:
+    if not config.save_path.is_dir() and avg_loss < best_loss:
         torch.save({
             "epoch": e,
             "batch": i + 1,

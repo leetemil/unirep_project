@@ -1,2 +1,5 @@
+# Ignore Visual Studio Code settings
+.vscode/**
+
 # Ignore data
 data/**
