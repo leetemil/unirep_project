@@ -3,7 +3,7 @@ from torch import nn
 
 from constants import *
 
-from mlstm import mLSTMJIT
+from mlstm import mLSTM
 
 class UniRep(nn.Module):
     def __init__(self, rnn_type, embed_size, hidden_size, num_layers):
@@ -21,7 +21,7 @@ class UniRep(nn.Module):
         self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
 
         if rnn_type == "mLSTM":
-            self.rnn = mLSTMJIT(self.embed_size, self.hidden_size, num_layers = self.num_layers)
+            self.rnn = mLSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
         elif rnn_type == "LSTM":
             self.rnn = nn.LSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers, batch_first = True)
         elif rnn_type == "GRU":
