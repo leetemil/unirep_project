@@ -10,7 +10,7 @@ def seq2idx(seq, device = None):
     return torch.tensor([SEQ2IDX[s] for s in seq], device = device)
 
 def idx2seq(idxs):
-    return "".join([IDX2SEQ[i] for i in idxs if i != PADDING_VALUE and i != SEQ2IDX[EOS]])
+    return "".join([IDX2SEQ[i] for i in idxs])
 
 class ProteinDataset(Dataset):
     def __init__(self, file, device = None):
@@ -19,7 +19,7 @@ class ProteinDataset(Dataset):
         with open(file) as f:
             seqs = f.readlines()
 
-        list_seqs = map(lambda x: list(x[:-1]) + [EOS], seqs)
+        list_seqs = map(lambda x: [CLS] + list(x[:-1]) + [SEP], seqs)
         encodedSeqs = map(lambda x: seq2idx(x, self.device), list_seqs)
         self.seqs = list(encodedSeqs)
 
@@ -63,7 +63,7 @@ class IterProteinDataset(IterableDataset):
 
     def __iter__(self):
         str_seqs = self.get_str_seqs()
-        list_seqs = map(lambda x: list(x) + [EOS], str_seqs)
+        list_seqs = map(lambda x: [CLS] + list(x) + [SEP], str_seqs)
         encodedSeqs = map(lambda x: seq2idx(x, self.device), list_seqs)
         return encodedSeqs
 

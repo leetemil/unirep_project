@@ -18,7 +18,7 @@ class UniRep(nn.Module):
         # Define layers
         self.embed = nn.Embedding(NUM_TOKENS, self.embed_size, padding_idx = PADDING_VALUE)
 
-        self.lin = nn.Linear(self.hidden_size, NUM_INFERENCE_TOKENS)
+        self.lin = nn.Linear(self.hidden_size, NUM_TOKENS)
 
         if rnn_type == "mLSTM":
             self.rnn = mLSTM(self.embed_size, self.hidden_size, num_layers = self.num_layers)
