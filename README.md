@@ -1,3 +1,8 @@
+## TODO
+- [ ] Visualize PCA (figure 2 a).
+- [ ] Visualize t-SNE (figure 2 b).
+- [ ] Visualize t-SNE. (figure 2 c).
+
 # unirep_project
 Repository for project out of course scope on Unirep article.
 
@@ -22,13 +27,6 @@ hvis man kigger på en proteinfamilier og aligner. tag alignment, lær en model 
 - rosetta negative total energy?
 - buried non-polar surface area???
 
-## TODO
-
-- [x] Fetch and load data into Python.
-- [x] Make dummy model and predict using PyTorch.
-- [ ] Visualize t-SNE. (figure 2 c).
-- [ ] Visualize PCA (figure 2 a).
-- [ ] Visualize t-SNE (figure 2 b).
 
 ## UniRep Sources
 - [The Nature Methods article.](https://www.nature.com/articles/s41592-019-0598-1)
