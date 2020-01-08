@@ -7,6 +7,7 @@ from torch import nn
 from torch import Tensor
 from torch.nn import Parameter
 from torch import jit
+from torch.nn.utils import weight_norm
 
 # Inspired by https://github.com/guillitte/pytorch-sentiment-neuron/blob/master/models.py
 class mLSTMCellJIT(jit.ScriptModule):
@@ -101,10 +102,10 @@ class mLSTMCell(torch.nn.Module):
     def __init__(self, input_size, hidden_size):
         super().__init__()
 
-        self.wmx = nn.Linear(input_size, hidden_size, bias = False)
-        self.wmh = nn.Linear(hidden_size, hidden_size, bias = False)
-        self.wx =  nn.Linear(input_size, 4 * hidden_size, bias = False)
-        self.wh =  nn.Linear(hidden_size, 4 * hidden_size, bias = True)
+        self.wmx = weight_norm(nn.Linear(input_size, hidden_size, bias = False))
+        self.wmh = weight_norm(nn.Linear(hidden_size, hidden_size, bias = False))
+        self.wx =  weight_norm(nn.Linear(input_size, 4 * hidden_size, bias = False))
+        self.wh =  weight_norm(nn.Linear(hidden_size, 4 * hidden_size, bias = True))
 
     def forward(self, input, state):
         # type: (Tensor, Tuple[Tensor, Tensor]) -> Tuple[Tensor, Tensor]
@@ -112,7 +113,7 @@ class mLSTMCell(torch.nn.Module):
 
         m = self.wmx(input) * self.wmh(hx)
         gates = self.wx(input) + self.wh(m)
-        ingate, forgetgate, outgate, cellgate = gates.chunk(4, 1)
+        ingate, forgetgate, outgate, cellgate = torch.chunk(gates, 4, 1)
 
         ingate = torch.sigmoid(ingate)
         forgetgate = torch.sigmoid(forgetgate)
