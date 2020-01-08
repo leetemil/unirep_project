@@ -21,7 +21,7 @@ tape so that you can use the same training machinery to run your tasks.
 import torch
 import torch.nn as nn
 from tape import ProteinModel, ProteinConfig
-from tape.models.modeling_utils import SequenceToSequenceClassificationHead
+from tape.models.modeling_utils import SequenceToSequenceClassificationHead, ValuePredictionHead
 from tape.registry import registry
 
 from unirep import UniRep
@@ -216,10 +216,28 @@ class UniRepReimpForSequenceToSequenceClassification(UniRepReimpAbstractModel):
         outputs = self.unirep_reimp(input_ids, input_mask=input_mask)
 
         sequence_output, pooled_output = outputs[:2]
-        outputs = self.classify(sequence_output, targets) + outputs[2:]
-        # (loss), prediction_scores, (hidden_states)
-        return outputs
+        # outputs = self.classify(sequence_output, targets) + outputs[2:]
+        # # (loss), prediction_scores, (hidden_states)
+        # return outputs
 
+        prediction, *_ = self.classify(sequence_output)
+
+        outputs = (prediction,)
+
+        if targets is not None:
+            loss = nn.CrossEntropyLoss(ignore_index=-1)(prediction.view(-1, prediction.size(2)), targets.view(-1))
+            # cast to float b/c float16 does not have argmax support
+            is_correct = prediction.float().argmax(-1) == targets
+            is_valid_position = targets != -1
+
+            # cast to float b/c otherwise torch does integer division
+            num_correct = torch.sum(is_correct * is_valid_position).float()
+            accuracy = num_correct / torch.sum(is_valid_position).float()
+            metrics = {'acc': accuracy}
+
+            outputs = ((loss, metrics),) + outputs
+
+        return outputs  # ((loss, metrics)), prediction
 
 @registry.register_task_model('contact_prediction', 'unirep_reimp')
 class UniRepReimpForContactPrediction(UniRepReimpAbstractModel):
