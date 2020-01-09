@@ -39,7 +39,7 @@ The remainder of the report presents and discusses the key reproduced results an
 
 In this section we first present the main model architectures used in the article. Specifically, the idea and governing principles of Recurrent Neural Networks (RNN) are introduced, giving the necessary knowledge to understand specific variants of RNNs. Then two different RNN models are presented, namely the Long Short-Term Memory (LSTM) and the Multiplicative Recurrent Neural Network (mRNN). Each provide desirable properties, which are finally merged into the multiplicative LSTM (mLSTM), which is the model architecture used in the UniRep article.
 
-As we use a series of downstream tasks to measure the performance of our implementation; these tasks are directly chosen based on the learning tasks and surveyed benchmarks by \cite{rao2019evaluating}. These require an introduction, which will be given here, under section \todo{section}, as well as what performance metrics are used in these tasks.
+As we use a series of downstream tasks to measure the performance of our implementation; these tasks are directly chosen based on the learning tasks and surveyed benchmarks by \cite{tape2019}. These require an introduction, which will be given here, under section \todo{section}, as well as what performance metrics are used in these tasks.
 % mLSTM:
 % https://arxiv.org/pdf/1609.07959.pdf
 
@@ -68,7 +68,7 @@ Here, $\ve{W}$ and $\ve{U}$ are the parameters for the previous hidden state $\v
 
 During training, a popular choice is to disregard the model prediction when passing the current input and instead feed the model the true character for the ensuing iteration. This procedure is usually called \textit{teacher forcing}, which ensures that the hidden state is based on a true sequence and not (potentially wrong) model predictions.
 
-The backpropagation in RNN's is no different from 'ordinary' neural networks; the parameters are updated using a gradient-based optimizer, taking advantage of the network operations being differentiable by design. For each model output prediction, a loss in computed with respect to the true label. The gradient of the loss is calculated using the chain rule, with respect to the parameters of the model. This gradient is then used to update the parameters, effectively lowering the error. This procedure is repeated until the loss is sufficiently low, or a similar termination condition is met. The algorithm is in this case referred to as backpropagation through time (BPTT), as each iteration is dependent on the hidden state of the previous iteration. This dependency makes the backward pass sequential, and so it is computationally expensive fo long sequences as it cannot be parallelized. For this reason, a truncated version (TBPTT) is often applied instead, which splits the sequence into a number of smaller sequences, each updated on its own. This has the effect that the backpropagation can be effectively computed across longer sequences, but also that effects spanning across splits are lost to the most. TBPTT is used in the UniRep article experiments.
+The backpropagation in RNN's is no different from `ordinary' neural networks; the parameters are updated using a gradient-based optimizer, taking advantage of the network operations being differentiable by design. For each model output prediction, a loss is computed with respect to the true label. The gradient of the loss is calculated using the chain rule, with respect to the parameters of the model. This gradient is then used to update the parameters, effectively lowering the error. This procedure is repeated until the loss is sufficiently low, or a similar termination condition is met. The algorithm is in this case referred to as backpropagation through time (BPTT), as each iteration is dependent on the hidden state of the previous iteration. This dependency makes the backward pass sequential, and so it is computationally expensive for longer sequences as it cannot be parallelized. For this reason, a truncated version (TBPTT) is often applied instead, which splits the sequence into a number of smaller sequences and updates weights after each sequence is processed. This has the effect that each pass gives more weight updates, and the backpropagation can thus be computed across longer sequences more effectively. It also has the negative effect that context spanning across splits are lost. TBPTT is used in the UniRep article experiments.
 
 \subsubsection{LSTM}
 The LSTM architecture is a variant of the RNN which incorporates additional modelling to make the network more persistent across time. The hidden state in simple RNN's described in the previous section have difficulties retaining a context that 'remembers' across longer sequences, i.e. long-term dependencies. One problem is that gradient propagation over long sequences tend to produce very small (vanishing) gradients, effectively nullifying any updates done to the parameters. A partial solution is to apply activation functions that retain derivatives within a stable range so that they do not become to small. This is however an issue if one wants to use the simple RNN for long-term dependencies, as it has been shown that the gradients are much smaller for long-term interaction compares to short-term interaction \cite{Goodfellow-et-al-2016}. It is not enough to restrict the network using activation functions that retain the gradients to a non-vanishing space, as any minor short-term gradient changes will, by its size, dominate long-term gradient changes. Therefore, it is not impossible to learn long-term dependencies, but it is very unlikely \cite{Goodfellow-et-al-2016}.
@@ -77,23 +77,58 @@ The LSTM mitigates this issue by being more explicit in its structure, incorpora
 
 \todo{insert figure?}
 
-The LSTM is a gated recurrent network, having four layers that interact at each time step. Most significantly the cell layer, or \textit{cell state} is introduced, which allows information to pass easily between states. A nice analogy is that the cell is the memory of the network. The cell state can be modified by the network through three separate interactions with the other layers. The cell state interactions are regulated by so-called gates, named after their ability to let information flow more or less freely to the cell state \cite{lstmwebsite}.
+The LSTM is a gated recurrent network, having four layers that interact at each time step. Most significantly the cell layer $\ve{c}_t$, or \textit{cell state} is introduced, which allows information to pass easily between states. A nice analogy is that the cell is the memory of the network. The cell state can be modified by the network through three separate interactions with the other layers. The cell state interactions are regulated by so-called gates, named after their ability to let information flow more or less freely to the cell state \cite{lstmwebsite}.
 
-The first interaction is regulating what the network should forget. This is called the forget-gate. This is important, as some information might loose its relevance once a certain step in the sequence is surpassed. In such a case, the network should not use its cell state to retain this information any more. Specifically, the previous hidden state $\ve{h}_{t-1}$ (which is different from the cell state) and the current input $\ve{x}_t$ are taken as inputs and fed to the forget-gate, which then passes the concatenation of the two inputs into a linear layer and applied a sigmoid activation to produce an outcome between 0 and 1 for each dimension of the cell state. This outcome represents how much information should be kept (a value close to 1) and how much should be forgotten (a value close to 0).
+The first interaction is regulating what the network should forget. This is called the forget-gate. This is important, as some information might loose its relevance once a certain step in the sequence is surpassed. In such a case, the network should not use its cell state to retain this information any more. Specifically, the previous hidden state $\ve{h}_{t-1}$ (which is different from the cell state) and the current input $\ve{x}_t$ are taken as inputs and fed to the forget-gate, which then passes the concatenation of the two inputs into a linear layer and applied a sigmoid activation to produce an outcome between 0 and 1 for each dimension of the cell state:
+\[ \ve{f}_t = \sigma \prts{\ve{W} \ve{x}_t + \ve{b} + \ve{W}'\ve{h}_{t-1} + \ve{b}' } \]
+This outcome vector $\ve{f}_t$ represents how much information should be kept (a value close to 1) and how much should be forgotten (a value close to 0).
 
 The second interaction is what new information should be remembered. This is done by first deciding what values should be updated, and then what they should be updated with. Both are computed based on the previous hidden state and the current input. These are separate, as one acts as a gate on each dimension (what dimensions should be updated), while the second acts as the information itself.
 
-% \[ f_t = \sigma \prts{\ve{W}_f \cdot \brts{\ve{h}_t, \ve{x}_t} + \ve{b}_f} \]
+The third interaction is producing a new hidden state, which is also the output of the current step. The output is generated based on the modified cell state, the previous hidden state and the current input. This is done in a similar fashion to how the cell state is updated: the previous hidden state and the current input is used to derive what should be returned from the cell state (using its own parameters and a sigmoid activation). Then, this result is combined with a \texttt{tanh} activation on the cell state. Together this is the output $\ve{h}_t$, and we say that it is controlled by the \textit{output gate}.
 
-The third interaction is producing an output. 
+The LSTM is significantly more complex than the simple RNN, but this complexity has proven very practical in many settings \todo{souce?}. Here we have dealt with some of the general issues that it solves, namely how to retain long-term memory. Because of its success, there are several variants of the above presented model. One is the \textit{multiplicative LSTM}, which merges the LSTM network with a multiplicative recurrent neural network. A proposed issue with the LSTM is that it takes a significant time for it to recover from mistakes, i.e. whenever the LSTM decides to remember the ``wrong'' things, it will takes the network many updates to correct this mistake \cite{krause2016multiplicative}. 
+This mSLTM variant is used in the UniRep paper, and so we briefly present its differences in the following section. 
+
+\todo{insert equations from https://pytorch.org/docs/stable/nn.html\#lstm}
 
 \todo{bidirection lstm?} disadvantage with simple RNN: directional in time, going through the sequence from left to right. In sequence labeling tasks where the entire sequence is known, such as in protein sequencing, we would like to take advantage of this by incorporating bidirectional information.
 
-\subsubsection{mRNN}
+% \subsubsection{mRNN}
 \subsubsection{mLSTM}
+In order to tackle the issue of recovering from bad parameters in a LSTM, the mLSTM introduces transition functions between hidden states. Parameters turns out to be poor when unexpected input is encountered. Thus, when this happens, it is desirable that the input have a significant effect on the parameter updates as the error would not otherwise be corrected. However, in LSTMs, it is hard for inputs to affect the model without significantly changing the cell state, which in turn affects the remaining layers. Therefore, the idea is to give the model transition functions to better recover whenever such inputs are met, by allowing different transitions to apply in different input cases. In a simplified way, these transitions are input-dependent parameters that allows the network to act differently in edge cases (or any case actually). This allows the network do address surprising inputs without `overwriting' the previous hidden state. This implies that inputs are discrete such that the network can learn parameters for each possible input, e.g. the different amino acids in proteins, and so this is suitable for protein prediction \cite{krause2016multiplicative}. The result is a network that can make input dependent transitions, while also keeping long-term control of relevant context.
+
+This is practically done by introducing an intermediate state $\ve{m}_t$ at time step $t$, which incorporates the input-dependent transition of the previous hidden state and the current input
+\[ \ve{m}_t = \ve{W}_{mx} \ve{x}_t \odot \ve{W}_{mh} \ve{h}_{t-1}. \]
+Here the $\odot$ operator denotes the Hadamard (element-wise) product. The gates described in the LSTM section are similar in the mLSTM, with the difference that interactions function on the intermediate state $\ve{m}_t$ instead of the previous hidden state $\ve{h}_{t-1}$. 
+
+% The entire mLSTM forward pass is as follows \cite{krause2016multiplicative}:
+% \begin{align*}
+%     \ve{m}_t &= \ve{W}_{mx} \ve{x}_t \odot \ve{W}_{mh} \ve{h}_{t-1}\\
+% \end{align*}
+
+\subsubsection{Gated Recurrent Unit}
+Like the LSTM, the \textit{Gated Recurrent Unit} network is an attempt to surpass the problem of retaining long-term context using gates to regulate the flow of information at each time step. Unlike the LSTM, it does not use an additional cell for its internal information. Rather, at each time step $t$, the GRU updates its hidden state $\ve{h}_{t}$ by interpolating between the previous state $\ve{h}_{t - 1}$ and a computed candiate state $\tilde{\ve{h}}_t$. This is regulated by an \textit{update gate} that informs this decision based on the input $\ve{x}_t$ and the previous hidden state. The gate essentially determines how much past information should be retained from the previous hidden state, given the current input. In addition, the candidate state is computed by
+\[\tilde{\ve{h}}_t = \operatorname{tanh}\prts{\ve{Wx}_t + \ve{U}\prts{\ve{r}_t \odot \ve{h}_{t-1}}},\]
+where $\ve{r}_t$ is a so called \textit{reset gate}. The reset gate makes the unit forget what it knows about any feature where the gate is turned off, i.e. where it has values close to 0, effectively making it consider only the current input for that feature.
+
+Both the GRU and the LSTM 
+
+% In total the GRU is made up of one hidden state and two gates, effectively decreasing the number of gradient computations in comparison to the LSTM alternative.
 
 \subsection{TAPE}
-\subsection{Performance Metrics}
+Evaluating protein representation/embedding requires some thought. Some might desire certain properties of the representation, e.g. that the representation space comes with certain operations (e.g. that allows one to measure distances between representations in the space) or that the representations are reversible in the sense that one can recover the protein (or set of proteins) of a given representation. Another desire might be that the constructed protein representations are performing well in practical settings, i.e. tasks where such representations are used indirectly to serve some other goal. This latter case is what the Tasks Assessing Protein Embeddings (TAPE) evaluates. It contains five biological tasks that are deemed relevant for real, practical scenarios in different domains of protein biology \cite{tape2019}. The TAPE tool is a standardized benchmark to evaluate and compare new protein embeddings with existing embeddings across several tasks. For these reasons it provide a systematic way of quantifying the UniRep protein representations. In addition it allows for comparison between variations of the model, allowing informed discussion of different modelling decisions and their impact on end results.
+
+We are not experts on the relevancy of the tasks in TAPE, and so rely on the expertise of the authors. The three areas that tasks are gathered from are structure prediction, protein engineering and detection of remote homologs \cite{tape2019}. The protein representations are used in tasks that require generalization to unseen sequences, but also refinement on already seen spaces of sequences. The difference in tasks ensures that the evaluation can be used as an indication of the general usefulness of the protein representations. It also gives a way to measure if some representations are more specialized than others, and therefore better suitable under some domains than others. The TAPE authors emphasizes the variation in performance across different tasks, and so this diversity seems important \cite{tape2019}.
+
+We have used what the authors call the 5 core tasks of TAPE, namely \todo{give short description of each task}:
+\begin{enumerate}
+    \item Secondary Structure \cite{ pdb, casp, netsurfp}.
+    \item Contact Prediction \cite{scop, proteinnet}.
+    \item Remote Homology Detection \cite{scop}.
+    \item Fluorescence \cite{sarkisyan2016}.
+    \item Stability \cite{rocklin2017}.
+\end{enumerate}
 
 \clearpage
 \section{The UniRep model}
@@ -155,6 +190,9 @@ TAPE downstream tasks
 
 \clearpage
 \section{Discussion}
+
+% project description
+% In this work, we wish to reproduce the results of the aforementioned authors, as well as review and critique the methods and design choices they made. We will attempt to evaluate in which aspects their model is strong, and in what aspects it is weak. In addition, we will reflect on alternative approaches, in order to find new ways of tackling the problem. In doing so, we will learn more about (unsupervised) representation learning and protein informatics.
 
 \clearpage
 \section{Conclusion}
