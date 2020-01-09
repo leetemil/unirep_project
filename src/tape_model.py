@@ -38,7 +38,7 @@ class UniRepReimpConfig(ProteinConfig):
         must provide defaults for all arguments.
     """
 
-    def __init__(self, rnn_type: str = "LSTM", embed_size: int = 10, hidden_size: int = 1024, num_layers: int = 1, **kwargs):
+    def __init__(self, rnn_type: str = "mLSTM", embed_size: int = 10, hidden_size: int = 1024, num_layers: int = 1, **kwargs):
         super().__init__(**kwargs)
         self.rnn_type = rnn_type
         self.embed_size = embed_size
@@ -99,6 +99,7 @@ class UniRepReimpModel(UniRepReimpAbstractModel):
 
         if self.inner_model.rnn_type == "mLSTM":
             out, state = self.inner_model.rnn(embed, None, input_mask)
+            state = state[0]
         else:
             out, state = self.inner_model.rnn(embed)
 
