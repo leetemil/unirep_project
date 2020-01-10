@@ -1,6 +1,4 @@
 # Command-line arguments before anything else
-from config import config
-
 from collections import OrderedDict
 
 import torch
@@ -19,6 +17,9 @@ from unirep import UniRep
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 NUM_GPUS = torch.cuda.device_count()
 MULTI_GPU = NUM_GPUS > 1
+
+MODEL_TYPE = 'GRU'
+
 if NUM_GPUS > 0:
     print(f"Found {NUM_GPUS} GPUs")
     print("CUDNN version:", torch.backends.cudnn.version())
@@ -26,7 +27,7 @@ else:
     print("Running on CPU")
 
 # Define model
-model = UniRep(config.rnn, config.embed_size, config.hidden_size, config.num_layers)
+model = UniRep(MODEL_TYPE, 10, 1024, 1)
 
 # Print model information
 print(model.summary())
@@ -41,7 +42,7 @@ model.to(device)
 data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
 
 # Load saved model
-saved_dict = torch.load('../data/models/model_LSTM_notrunc.torch', map_location=device)
+saved_dict = torch.load(f'../data/models/{MODEL_TYPE}_new_vocab.best', map_location=device)
 model_state_dict = saved_dict['model_state_dict']
 
 if any("module" in k for k in model_state_dict.keys()) and not MULTI_GPU:
@@ -54,6 +55,8 @@ if any("module" in k for k in model_state_dict.keys()) and not MULTI_GPU:
 
 model.load_state_dict(model_state_dict)
 
+AMINO_ACIDS = ["M", "R", "H", "K", "D", "E", "S", "T", "N", "Q", "C", "U", "G", "P", "A", "V", "I", "F", "Y", "W", "L", "O"]
+
 # Embed acids using model and show
 acids = seq2idx(AMINO_ACIDS, device).unsqueeze(-1)
 with torch.no_grad():
@@ -65,6 +68,7 @@ pca_acids = pca.transform(acids)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
+ax.set_title(f'{MODEL_TYPE}: Amino Acid Embedding')
 
 AILMV = 'aqua'
 GP = 'darkblue'
@@ -98,9 +102,18 @@ colors = [
     FWY, # Y
 ]
 
+import matplotlib.patches as mpatches
+uniq_colors = ['aqua', 'darkblue', 'darkgreen', 'gold', 'purple', 'salmon']
+labels = ['Hydrophobic aliphatic', 'Unique', 'Polar Neutral', 'Charged acidic', 'Hydrophobic aromatic', 'Charged basic']
+patches = [mpatches.Patch(color=c, label=l) for (c, l) in zip(uniq_colors, labels)]
+
 xs = pca_acids[:, 0]
 ys = pca_acids[:, 1]
 zs = pca_acids[:, 2]
 
 ax.scatter(xs, ys, zs, c=colors, s=50)
+ax.legend(handles=patches, loc='lower left')
+ax.view_init(9, -53)
+plt.tight_layout()
+plt.savefig(f'../figures/fig2a_{MODEL_TYPE}.pdf')
 plt.show()
