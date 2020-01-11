@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-parser = argparse.ArgumentParser(description = "Runs training of the UniRep model.")
+parser = argparse.ArgumentParser(description = "Runs training of the UniRep model.", formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("data", type = Path, help = "File to load training data from")
 parser.add_argument("validation", type = Path, help = "File to load validation data from")
