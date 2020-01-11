@@ -218,7 +218,11 @@ We ended up with three different model architectures, each using a different kin
 For data, we downloaded the UniRef50 dataset \cite{uniprot}, the same dataset that the UniRep authors used. However, from the time between UniRep's training and our reimplementation, the UniRef50 dataset had grown from around 27 million proteins to 39 million proteins. At first, we did not consider this a problem, since we had developed a streaming dataloader which did not need to hold the entire dataset in memory (which would obviously be impossible). However, the dataset's size proved to be a problem for model training -- it could take our largest models more than 12 hours to train a single epoch, during which performance would not increase significantly. Further training proved that the dataset was simply too large for our model to learn from.
 
 \subsubsection{Training}
-In order to try to combat the lack of training performance of our models, we tried using truncated backpropogation, just as they do in the UniRep paper.
+In order to try to combat the lack of training performance of our models, we tried using truncated backpropogation, just as they do in the UniRep paper. This helped our model learn slightly faster, since more gradient updates were made for each protein sequence. Also, the training got simpler, because the gradient only takes into account the operations of the RNN that happened in the truncation window.
+
+Despite truncated backpropogation, our model was still not improving significantly while training, or at least improving too slowly. We're not sure why the model was reluctant to learn -- perhaps we simply did not have enough time to train or maybe the model's dimensions were too small for it to learn effectively. We bit the bullet and reduced the size of the training dataset from all the 39 million proteins to a more manageable 102400. Finally we could complete multiple epochs of training within a reasonable time-frame, leading to improved training loss. Especially the LSTM model was capable of achieving a better training loss on predicting the next amino acid than the other two RNNs.
+
+\todo{figure of train loss?}
 
 mlstm
 
@@ -235,14 +239,14 @@ TAPE downstream tasks
 
 \subsubsection{Amino Acid Embeddings}
 
-\begin{figure}[h!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/fig2a_LSTM.pdf}
     \caption{Caption}
     \label{fig:fig2a_LSTM}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.8\textwidth]{figures/fig2a_GRU.pdf}
     \caption{Caption}
@@ -251,7 +255,30 @@ TAPE downstream tasks
 
 \subsubsection{Proteome Representations}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/fig2b_LSTM.pdf}
+    \caption{Caption}
+    \label{fig:fig2b_LSTM}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/fig2b_GRU.pdf}
+    \caption{Caption}
+    \label{fig:fig2b_GRU}
+\end{figure}
+
 \subsubsection{SCOPe Secondary Structure Representations}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/fig2c_GRU.pdf}
+    \caption{Caption}
+    \label{fig:fig2c_GRU}
+\end{figure}
+
+\todo{make figure 2 c LSTM}
 
 \subsubsection{TAPE Tasks}
 
