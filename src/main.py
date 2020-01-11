@@ -146,7 +146,7 @@ for e in range(saved_epoch, config.epochs):
     with torch.no_grad():
         val_loss = 0
         val_loss_count = 0
-        for i, xb in enumerate(validation_protein_dataloader):
+        for xb in validation_protein_dataloader:
             mask = (xb != PADDING_VALUE).to(dtype = torch.long)
 
             # Forward pass
