@@ -19,3 +19,8 @@ parser.add_argument("--save_path", type = Path, default = Path(), help = "File t
 parser.add_argument("--patience", type = int, default = 20, help = "Training stops when the model does not improve for this many epochs.")
 
 config = parser.parse_args()
+
+print("Arguments given:")
+for arg, value in config.__dict__.items():
+	print(f"  {arg}: {value}")
+print("")

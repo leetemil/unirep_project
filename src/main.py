@@ -132,7 +132,7 @@ for e in range(saved_epoch, config.epochs):
 
     cuda_mem_allocated = 0
     if torch.cuda.is_available:
-        cuda_mem_allocated = torch.cuda.max_memory_allocated() / (1024 * 1024)
+        cuda_mem_allocated = torch.cuda.max_memory_allocated() / (1024 ** 3)
         torch.cuda.reset_max_memory_allocated()
 
     avg_train_loss = epoch_train_loss / epoch_train_loss_count if epoch_train_loss_count != 0 else float("inf")
@@ -183,7 +183,7 @@ for e in range(saved_epoch, config.epochs):
         patience += 1
         print(f"Model has not improved for {patience} epochs.")
 
-    print(f"Epoch {e}: train loss: {avg_train_loss:5.3f} validation loss: {avg_val_loss:5.3f} validation accuracy: {accuracy:5.3f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
+    print(f"Epoch {e}: train loss: {avg_train_loss:5.3f} val. loss: {avg_val_loss:5.3f} val. accuracy: {accuracy:5.3f} batches: {i + 1} time: {epoch_time / 3600:.2f}h GPU Memory used: {cuda_mem_allocated:.2f} GiB")
     if patience >= config.patience:
         print(f"Model has not improved for {config.patience}. End of training.")
         break
