@@ -39,8 +39,11 @@ model.to(device)
 data_device = torch.device("cuda" if torch.cuda.is_available() and not MULTI_GPU else "cpu")
 
 print("Loading data...")
-protein_dataset = getProteinDataset(config.data, data_device)
-protein_dataloader = getProteinDataLoader(protein_dataset, batch_size = config.batch_size)
+train_protein_dataset = getProteinDataset(config.data, data_device)
+train_protein_dataloader = getProteinDataLoader(train_protein_dataset, batch_size = config.batch_size)
+
+validation_protein_dataset = getProteinDataset(config.validation, data_device)
+validation_protein_dataloader = getProteinDataLoader(validation_protein_dataset, batch_size = config.batch_size)
 print("Data loaded!")
 
 # Define optimizer
@@ -59,16 +62,16 @@ if config.load_path.is_file():
     saved_batch = loaded["batch"]
     print("Model loaded succesfully!")
 
-epoch_loss = 0
-epoch_loss_count = 0
-batch_loss = 0
-batch_loss_count = 0
-best_loss = float("inf")
+epoch_train_loss = 0
+epoch_train_loss_count = 0
+batch_train_loss = 0
+batch_train_loss_count = 0
+best_val_loss = float("inf")
 print("Training...")
 # Resume epoch count from saved_epoch
 for e in range(saved_epoch, config.epochs):
     epoch_start_time = time.time()
-    for i, xb in enumerate(protein_dataloader):
+    for i, xb in enumerate(train_protein_dataloader):
         # Run through the data until just after the saved batch
         if saved_batch > 0:
             saved_batch -= 1
@@ -97,25 +100,25 @@ for e in range(saved_epoch, config.epochs):
             true = true.flatten()
             loss = criterion(pred, true)
 
-            epoch_loss += loss.item()
-            epoch_loss_count += 1
-            batch_loss += loss.item()
-            batch_loss_count += 1
+            epoch_train_loss += loss.item()
+            epoch_train_loss_count += 1
+            batch_train_loss += loss.item()
+            batch_train_loss_count += 1
 
             # Calculate gradient which minimizes loss
             loss.backward()
 
         # Printing progress
         if ((i + 1) % config.print_every) == 0:
-            avg_loss = batch_loss / batch_loss_count if batch_loss_count != 0 else float("inf")
-            batch_loss = 0
-            batch_loss_count = 0
+            avg_train_loss = batch_train_loss / batch_train_loss_count if batch_train_loss_count != 0 else float("inf")
+            batch_train_loss = 0
+            batch_train_loss_count = 0
             sequences_processed = (i + 1) * config.batch_size
             time_taken = time.time() - epoch_start_time
             avg_time = time_taken / (i + 1)
-            batches_left = (len(protein_dataset) / config.batch_size) - (i + 1)
+            batches_left = (len(train_protein_dataset) / config.batch_size) - (i + 1)
             eta = max(0, avg_time * batches_left)
-            print(f"Epoch: {e:3} Batch: {i + 1:6} Loss: {avg_loss:5.4f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(protein_dataset):6.2f}%")
+            print(f"Epoch: {e:3} Batch: {i + 1:6} Loss: {avg_train_loss:5.3f} avg. time: {avg_time:5.2f} ETA: {eta / 3600:6.2f} progress: {100 * sequences_processed / len(train_protein_dataset):6.2f}%")
 
         # Saving
         if not config.save_path.is_dir() and ((i + 1) % config.save_every) == 0:
@@ -132,18 +135,52 @@ for e in range(saved_epoch, config.epochs):
         cuda_mem_allocated = torch.cuda.max_memory_allocated() / (1024 * 1024)
         torch.cuda.reset_max_memory_allocated()
 
-    avg_loss = epoch_loss / epoch_loss_count if epoch_loss_count != 0 else float("inf")
-    epoch_loss = 0
-    epoch_loss_count = 0
+    avg_train_loss = epoch_train_loss / epoch_train_loss_count if epoch_train_loss_count != 0 else float("inf")
+    epoch_train_loss = 0
+    epoch_train_loss_count = 0
     epoch_end_time = time.time()
     epoch_time = epoch_end_time - epoch_start_time
-    if not config.save_path.is_dir() and avg_loss < best_loss:
+
+    # Get validation loss and accuracy
+    model.eval()
+    with torch.no_grad():
+        val_loss = 0
+        val_loss_count = 0
+        for i, xb in enumerate(validation_protein_dataloader):
+            mask = (xb != PADDING_VALUE).to(dtype = torch.long)
+
+            # Forward pass
+            pred, _ = model(xb, None, mask)
+
+            # Calculate loss
+            true = torch.zeros(xb.shape, dtype = torch.int64, device = device) + PADDING_VALUE
+            true[:, :-1] = xb[:, 1:]
+
+            # Flatten the sequence dimension to compare each timestep in cross entropy loss
+            pred = pred.flatten(0, 1)
+            true = true.flatten()
+            loss = criterion(pred, true)
+            val_loss += loss.item()
+            val_loss_count += 1
+            accuracy = (pred.argmax(dim = 1) == true).to(dtype = float).mean()
+    model.train()
+
+    avg_val_loss = val_loss / val_loss_count
+    patience = 0
+    if not config.save_path.is_dir() and avg_val_loss <= best_val_loss:
+        print(f"Model improved from {best_val_loss:5.3f} to {avg_val_loss:5.3f}! Saving model...")
+        best_val_loss = avg_val_loss
+        patience = 0
         torch.save({
             "epoch": e,
             "batch": i + 1,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": opt.state_dict(),
-            "loss": avg_loss
+            "train_loss": avg_train_loss,
+            "val_loss": avg_val_loss
         }, config.save_path.with_suffix(".best"))
+    else:
+        patience += 1
+        print(f"Model has not improved for {patience} epochs.")
 
-    print(f"Epoch {e}: average loss: {avg_loss:5.4f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
+    print(f"Epoch {e}: train loss: {avg_train_loss:5.3f} validation loss: {avg_val_loss:5.3f} validation accuracy: {accuracy:5.3f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")

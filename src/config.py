@@ -3,7 +3,8 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description = "Runs training of the UniRep model.")
 
-parser.add_argument("--data", type = Path, required = True, help = "File to load data from")
+parser.add_argument("data", type = Path, help = "File to load training data from")
+parser.add_argument("validation", type = Path, help = "File to load validation data from")
 parser.add_argument("--epochs", type = int, default = 1000, help = "Number of epochs to train for.")
 parser.add_argument("--batch_size", type = int, default = 1024, help = "Size of each batch.")
 parser.add_argument("--truncation_window", type = int, default = 256, help = "Truncation window of truncated backpropogation through time")

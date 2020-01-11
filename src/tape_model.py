@@ -1,23 +1,3 @@
-"""Example of how to add a model in tape.
-
-This file shows an example of how to add a new model to the tape training
-pipeline. tape models follow the huggingface API and so require:
-
-    - A config class
-    - An abstract model class
-    - A model class to output sequence and pooled embeddings
-    - Task-specific classes for each individual task
-
-This will walkthrough how to create each of these, with a task-specific class for
-secondary structure prediction. You can look at the other task-specific classes
-defined in e.g. tape/models/modeling_bert.py for examples on how to
-define these other task-specific models for e.g. contact prediction or fluorescence
-prediction.
-
-In addition to defining these models, this shows how to register the model to
-tape so that you can use the same training machinery to run your tasks.
-"""
-
 import torch
 import torch.nn as nn
 from tape import ProteinModel, ProteinConfig
@@ -29,15 +9,6 @@ from scipy import stats
 from unirep import UniRep
 
 class UniRepReimpConfig(ProteinConfig):
-    """ The config class for our new model. This should be a subclass of
-        ProteinConfig. It's a very straightforward definition, which just
-        accepts the arguments that you would like the model to take in
-        and assigns them to the class.
-
-        Note - if you do not initialize using a model config file, you
-        must provide defaults for all arguments.
-    """
-
     def __init__(self, rnn_type: str = "mLSTM", embed_size: int = 10, hidden_size: int = 1024, num_layers: int = 1, **kwargs):
         super().__init__(**kwargs)
         self.rnn_type = rnn_type
@@ -47,10 +18,6 @@ class UniRepReimpConfig(ProteinConfig):
         self.initializer_range = 0.02
 
 class UniRepReimpAbstractModel(ProteinModel):
-    """ All your models will inherit from this one - it's used to define the
-        config_class of the model set and also to define the base_model_prefix.
-        This is used to allow easy loading/saving into different models.
-    """
     config_class = UniRepReimpConfig
     base_model_prefix = 'unirep_reimp'
 
@@ -63,12 +30,6 @@ class UniRepReimpAbstractModel(ProteinModel):
 
 @registry.register_task_model('embed', 'unirep_reimp')
 class UniRepReimpModel(UniRepReimpAbstractModel):
-    """ The base model class. This will return embeddings of the input amino
-        acid sequence. It is not used for any specific task - you'll have to
-        define task-specific models further on. Note that there is a little
-        more machinery in the models we define, but this is a stripped down
-        version that should give you what you need
-    """
     # init expects only a single argument - the config
     def __init__(self, config: UniRepReimpConfig):
         super().__init__(config)
@@ -76,22 +37,6 @@ class UniRepReimpModel(UniRepReimpAbstractModel):
         self.init_weights()
 
     def forward(self, input_ids, input_mask = None):
-        """ Runs the forward model pass
-
-        Args:
-            input_ids (Tensor[long]):
-                Tensor of input symbols of shape [batch_size x protein_length]
-            input_mask (Tensor[bool]):
-                Tensor of booleans w/ same shape as input_ids, indicating whether
-                a given sequence position is valid
-
-        Returns:
-            sequence_embedding (Tensor[float]):
-                Embedded sequence of shape [batch_size x protein_length x hidden_size]
-            pooled_embedding (Tensor[float]):
-                Pooled representation of the entire sequence of size [batch_size x hidden_size]
-        """
-
         if input_mask is None:
             input_mask = torch.ones_like(input_ids)
 
@@ -146,7 +91,6 @@ class UniRepReimpModel(UniRepReimpAbstractModel):
 
 #         # (loss), prediction_scores, (hidden_states)
 #         return outputs
-
 
 @registry.register_task_model('fluorescence', 'unirep_reimp')
 @registry.register_task_model('stability', 'unirep_reimp')
@@ -280,22 +224,11 @@ class UniRepReimpForContactPrediction(UniRepReimpAbstractModel):
 
         self.init_weights()
 
-    def forward(self, input_ids, input_mask=None, targets=None):
+    def forward(self, input_ids, protein_length, input_mask=None, targets=None):
 
         outputs = self.unirep_reimp(input_ids, input_mask=input_mask)
 
         sequence_output, pooled_output = outputs[:2]
-        outputs = self.predict(sequence_output, targets) + outputs[2:]
+        outputs = self.predict(sequence_output, protein_length, targets) + outputs[2:]
         # (loss), prediction_scores, (hidden_states), (attentions)
         return outputs
-
-if __name__ == '__main__':
-    """ To actually run the model, you can do one of two things. You can
-    simply import the appropriate run function from tape.main. The
-    possible functions are `run_train`, `run_train_distributed`, `run_eval`,
-    and `run_embed`. Alternatively, you can simply place this file inside
-    the `tape/models` directory, where it will be auto-imported
-    into tape.
-    """
-    from tape.main import run_train, run_eval, run_embed
-    run_train()
