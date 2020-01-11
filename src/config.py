@@ -16,5 +16,6 @@ parser.add_argument("--print_every", type = int, default = 10, help = "How many 
 parser.add_argument("--save_every", type = int, default = 10, help = "How many batches between saving the model.")
 parser.add_argument("--load_path", type = Path, default = Path(), help = "File to load an existing model from.")
 parser.add_argument("--save_path", type = Path, default = Path(), help = "File to save the model to. It will be overwritten if it exists already.")
+parser.add_argument("--patience", type = int, default = 20, help = "Training stops when the model does not improve for this many epochs.")
 
 config = parser.parse_args()

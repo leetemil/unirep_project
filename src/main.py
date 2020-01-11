@@ -184,3 +184,6 @@ for e in range(saved_epoch, config.epochs):
         print(f"Model has not improved for {patience} epochs.")
 
     print(f"Epoch {e}: train loss: {avg_train_loss:5.3f} validation loss: {avg_val_loss:5.3f} validation accuracy: {accuracy:5.3f} batches: {i + 1} time: {epoch_time / 3600:.2f} hours. GPU Memory used: {cuda_mem_allocated:.2f} MiB")
+    if patience >= config.patience:
+        print(f"Model has not improved for {config.patience}. End of training.")
+        break
