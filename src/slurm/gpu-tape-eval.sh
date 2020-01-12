@@ -4,7 +4,7 @@
 # we run on the gpu partition and we allocate 1 titan x
 #SBATCH -p gpu --gres=gpu:titanx:1
 #Note that a program will be killed once it exceeds this time!
-#SBATCH --time=0-00:05:00
+#SBATCH --time=7-00:00:00
 
 # Info:
 date -Is
@@ -13,7 +13,7 @@ echo "GPU IDs: $CUDA_VISIBLE_DEVICES"
 
 # Script:
 # -u: Unbuffered output
-python3 -u tape_model.py "$@"
+python3 -u tape_eval.py "$@"
 
 # End
 date -Is
