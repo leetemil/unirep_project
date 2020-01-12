@@ -62,6 +62,7 @@ if config.load_path.is_file():
     saved_batch = loaded["batch"]
     print("Model loaded succesfully!")
 
+patience = 0
 epoch_train_loss = 0
 epoch_train_loss_count = 0
 batch_train_loss = 0
@@ -166,7 +167,6 @@ for e in range(saved_epoch, config.epochs):
     model.train()
 
     avg_val_loss = val_loss / val_loss_count
-    patience = 0
     if not config.save_path.is_dir() and avg_val_loss <= best_val_loss:
         print(f"Model improved from {best_val_loss:5.3f} to {avg_val_loss:5.3f}! Saving model...")
         best_val_loss = avg_val_loss
