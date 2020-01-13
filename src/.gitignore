@@ -1,3 +1,7 @@
+# Ignore the tape logs and results folders
+logs/
+results/
+
 #####################
 # Python .gitignore #
 #####################
