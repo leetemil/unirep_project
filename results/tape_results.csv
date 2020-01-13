@@ -1,20 +1,20 @@
-Model\Task, Secondary Structure, Contact Prediction, Remote Homology Detection, Fluorescence,       Stability
-UniRep,     0.73,                0.34,               0.23,                      0.67,               0.73
-LSTM1024,   0.7177147858874225,
-mLSTM1024,
-GRU1024,
-LSTM512,
-mLSTM512,
-GRU512,
-LSTM128,
-mLSTM128,
-GRU128,
-LSTM1024T,  0.7088607594936709,           ,                  ,                  0.6817694473210085, 0.699808555041749
-mLSTM1024T,
-GRU1024T,
-LSTM512T,
-mLSTM512T,
-GRU512T,
-LSTM128T,
-mLSTM128T,
-GRU128T,
+Name,       RNN,   Size, TBP?, Secondary Structure, Contact Prediction, Remote Homology Detection, Fluorescence,       Stability
+UniRep,     mLSTM, 1900, Yes,  0.73,                0.34,               0.23,                      0.67,               0.73
+LSTM1024,   LSTM,  1024, No    0.7179167788849986,
+mLSTM1024,  mLSTM, 1024, No    ,
+GRU1024,    GRU,   1024, No    0.7032722865607326,
+LSTM512,    LSTM,  512,  No    0.7111500134661999,
+mLSTM512,   mLSTM, 512,  No    ,
+GRU512,     GRU,   512,  No    0.7089954214920550,
+LSTM128,    LSTM,  128,  No    0.7137085914354969,
+mLSTM128,   mLSTM, 128,  No    ,
+GRU128,     GRU,   128,  No    0.7039792620522488,
+LSTM1024T,  LSTM,  1024, Yes   0.6999057366011312,           ,                  ,                  0.6817694473210085, 0.699808555041749
+mLSTM1024T, mLSTM, 1024, Yes   ,
+GRU1024T,   GRU,   1024, Yes   0.6934419606786965,
+LSTM512T,   LSTM,  512,  Yes   0.7055278750336655,
+mLSTM512T,  mLSTM, 512,  Yes   ,
+GRU512T,    GRU,   512,  Yes   0.6881228117425262,
+LSTM128T,   LSTM,  128,  Yes   0.7002423915970913,
+mLSTM128T,  mLSTM, 128,  Yes   ,
+GRU128T,    GRU,   128,  Yes   0.6995690816051711
