@@ -53,7 +53,7 @@ Viewed as a graph, the RNN is a series of layers (or layered cell structures for
 
 In addition, RNN's have the desirable property that the internal state is flexible in terms of learning what context is important and what can be disregarded. However, one disadvantage is that, for simple RNN's, it is difficult to make the model retain important information across long sequences, i.e. the context at some step $t$ will not contain much information from a time step $s << t$. To remedy this, more elaborate architectures have been designed that incorporate specific internal cell states to retain context \cite{graves2012supervised}. Specifically, the LSTM architecture does this, which we discuss in section \todo{section}. The mLSTM architecture used in the UniRep paper is a variation on the LSTM.
 
-Networks that use the same function iteratively on sequenced inputs are typically represented as a recursive formula. A simple example is
+Networks that use the same function iteratively on sequenced inputs are typically represented as a recursive formula. A typical example is
 \[ \ve{h}_t = f\prts{\ve{x}_t, \ve{h}_{t - 1}}, \]
 where the context state $\ve{h}_t$ at time $t$ is the result of applying a function $f$ to the input character $\ve{x}_t$ at time $t$ and the previous context state $\ve{h}_{t_1}$. Such representations allow for a simple description that conveys what dependencies there are between inputs, without unrolling the entire recursive structural dependency. Some models might require several such relations to describe it. We will use such representations to more formally describe models.
 
@@ -116,6 +116,7 @@ Here the $\odot$ operator denotes the Hadamard (element-wise) product. The gates
 % \end{align*}
 
 \subsection{TAPE}
+\label{section:tape}
 Evaluating protein representation/embedding requires some thought. Some might desire certain properties of the representation, e.g. that the representation space comes with certain operations (e.g. that allows one to measure distances between representations in the space) or that the representations are reversible in the sense that one can recover the protein (or set of proteins) of a given representation. Another desire might be that the constructed protein representations are performing well in practical settings, i.e. tasks where such representations are used indirectly to serve some other goal. This latter case is what the Tasks Assessing Protein Embeddings (TAPE) evaluates. It contains five biological tasks that are deemed relevant for real, practical scenarios in different domains of protein biology \cite{tape2019}. The TAPE tool is a standardized benchmark to evaluate and compare new protein embeddings with existing embeddings across several tasks. For these reasons it provide a systematic way of quantifying the UniRep protein representations. In addition it allows for comparison between variations of the model, allowing informed discussion of different modelling decisions and their impact on end results.
 
 We are not experts on the relevancy of the tasks in TAPE, and so rely on the expertise of the authors. The three areas that tasks are gathered from are structure prediction, protein engineering and detection of remote homologs \cite{tape2019}. The protein representations are used in tasks that require generalization to unseen sequences, but also refinement on already seen spaces of sequences. The difference in tasks ensures that the evaluation can be used as an indication of the general usefulness of the protein representations. It also gives a way to measure if some representations are more specialized than others, and therefore better suitable under some domains than others. The TAPE authors emphasizes the variation in performance across different tasks, and so this diversity seems important \cite{tape2019}.
@@ -135,10 +136,12 @@ We have used what the authors call the 5 core tasks of TAPE:
 
 \clearpage
 \section{The UniRep model}
-In this section, we review the UniRep article in detail. We explain the core motivations behind the work, as well as its main contribution. We then explain the results that UniRep achieved and discuss the model's strengths and weaknesses \todo{dunno about this sentence}.
+In this section we review the UniRep model developed by Alley et al. \cite{alley2019unified}. We explain the core motivations behind the work, as well as its main contribution. We then explain the results that UniRep achieved and discuss the model's strengths and weaknesses \todo{dunno about this sentence}.
+
+\todo{short intro to the model/article? Something like 'The UniRep model is a protein sequence model that ..'}
 
 \subsection{Motivation}
-The motivation behind UniRep's approach stems from similar ideas from the field of natural language processing (NLP). In both fields, a huge amount of unlabeled data is available, while labeled data is sparse in comparison. In NLP, a huge amount of text is freely available, both in datasets and publicly on the internet, but a very small percentage of this data is labeled. In protein engineering, a vast amount of protein sequences are known, but their properties (labels) are only sparsely annotated.
+The motivation behind UniRep's approach stems from similar ideas from the field of natural language processing (NLP). In both fields, a huge amount of unlabeled data is available, while labeled data is sparse in comparison. In NLP, a huge amount of text is freely available, both in data sets and publicly on the internet, but only a very small percentage of this data is labeled. Likewise in protein engineering, a vast amount of protein sequences are known, but their properties (labels) are only sparsely annotated.
 
 Unsupervised representation learning within NLP has become essential and ubiquitous for downstream tasks. Using representations of words (in the form of high-dimensional vectors) has become so common, that large industrial-sized models are trained solely to learn a useful mapping from word to vector. Examples include models such as BERT and ELMo \todo{cite bert and elmo}. It has been shown that using these powerful pre-trained models as a preliminary step in other natural language learning tasks leads to significantly improved performance. The theory is that the representations capture essential features of the words, which can be used during inference in a neural network.
 
@@ -153,17 +156,19 @@ Specifically, the authors of UniRep used the mLSTM variant of the LSTM recurrent
 
 The model architecture does not produce a representation on its own. In order to extract the representation of a sequence, the hidden states of the mLSTM across the sequence length dimension are averaged, while the remaining linear layer is discarded. All of the hidden states, each of dimension 64, 256 or 1900 depending on the model, are thus reduced to a single vector of the same size as a single hidden state. This is the representation that the authors use and specifically the 1900-dimensional one is the one that they call "UniRep". This approach is reminiscent of a similar approach in NLP, known as auto-encoding, although there are some differences \todo{Expand on auto-encoders?}. The rationale for producing the representation in this way is that the model will "integrat[e] information across distant amino acids" \cite[p. 9]{alley2019unified}.
 
+\todo{go through UniRep article and look at their contributions. add those to this section}
+
 \subsection{Results}
 
-The author's of the UniRep article has developed a model that they claim provides a "semantically rich representation" of proteins. In order to found this claim, the authors provide a multitude of experiments and results that show the good properties of the UniRep representation. The experiments include pure analysis on the representation itself, as well as results obtained by using UniRep in other downstream learning tasks.
+The author's of the UniRep article has developed a model that they claim provides a "semantically rich representation" of proteins \todo{source}. In order to found this claim, the authors provide a multitude of experiments and results that show the good properties of the UniRep representation. The experiments include pure analysis on the representation itself, as well as results obtained by using UniRep in other downstream learning tasks.
 
-Some of the first results presented in the paper have to do with distances in the latent space of the representations. By using a special kind of dimension reduction, known as t-SNE, on the representations of proteins originating from different organisms, a clear clustering of the representation can be seen \cite[fig. 2b]{alley2019unified}. This may suggest that UniRep is able to capture distinctive features that differentiate organisms from each other. The authors also examine the space of embedded amino acids, by performing PCA on the embedded vectors. The embedded vectors seem to congregate in clusters that relate to certain properties of the amino acids, such as their charge.
+Some of the first results presented in the paper have to do with distances in the latent space of the representations. By using a special kind of dimension reduction, known as t-SNE \todo{make tSNE background explanation?}, on the representations of proteins originating from different organisms, a clear clustering of the representation can be seen \cite[fig. 2b]{alley2019unified}. This may suggest that UniRep is able to capture distinctive features that differentiate organisms from each other. The authors also examine the space of embedded amino acids, by performing PCA on the embedded vectors. The embedded vectors seem to congregate in clusters that relate to certain properties of the amino acids, such as their charge.
 
 Interestingly, one of the coordinates of the model's mLSTM hidden state seems to correlate with secondary structure of the protein. As the mLSTM progresses through the amino acid sequence, this coordinate's value correlates positively with helix structure and negatively with sheet structure \cite[fig. 2e]{alley2019unified}. This is quite strong evidence that the mLSTM's hidden state is able to capture information about proteins' secondary structure, which may help the final UniRep representation to characterize proteins.
 
 In order to perform downstream task learning, the authors concatenated the UniRep representation (the mean of the hidden states across the entire sequence) with the last hidden state and the last cell state of the mLSTM. They denote this combination of states as ``UniRep Fusion''. Using UniRep Fusion on downstream learning tasks, the authors were able to predict protein features, such as stability, with better scores than alternative approaches, like negative Rosetta total energy.
 
-In essence, UniRep provides automatic feature extraction from proteins, in a way that has been shown by the authors to be useful for prediction tasks. This contribution could allow cost-savings when searching the protein space for new potential proteins for various applications. By fine-tuning UniRep on a smaller region of the protein space (``evo-tuning''), the authors were able to produce a model which is, according to their estimates, two orders of magnitude more cost-efficient for protein engineering tasks. The idea is to use UniRep's predictions to guide the protein exploration, thus focusing on the proteins that are promising and discarding the ones that are not. In this way, hopefully fewer proteins have to be synthesized before a usable candidate protein is found.
+In essence, UniRep provides automatic feature extraction from proteins, in a way that has been shown by the authors to be useful for prediction tasks. This contribution could allow cost-savings when searching the protein space for new potential proteins for various applications. \todo{move some of this to main contribution?} By fine-tuning UniRep on a smaller region of the protein space (``evo-tuning''), the authors were able to produce a model which is, according to their estimates, two orders of magnitude more cost-efficient for protein engineering tasks. The idea is to use UniRep's predictions to guide the protein exploration, thus focusing on the proteins that are promising and discarding the ones that are not. In this way, hopefully fewer proteins have to be synthesized before a usable candidate protein is found.
 
 \subsection{Discussion}
 All in all, the UniRep model appears to be a useful tool in the growing field of protein machine learning. The idea of creating smart representations of proteins is not unique \todo{cite stuff from blog}, but the approach taken to solve this problem in the UniRep model is.
@@ -192,15 +197,15 @@ Despite the above complaints, it is of course difficult to argue with results, a
 
 \clearpage
 \section{Reproduction of UniRep}
-In this section, we turn towards a reproduction study of UniRep. We attempt to reimplement the core ideas behind the model, and try to attain a comparable performance. We attempt to reproduce figures and numerical results to the extent that is possible within this project. We also explore a few alternative models using other kinds of recurrent neural networks.
+In this section, we turn towards a reproduction study of UniRep. We attempt to reimplement the core ideas behind the model, and try to attain a comparable performance. We attempt to reproduce figures and numerical results to the extent that is possible within this project. We also examine different hyperparameter choices that could affect the model.
 
-It should be noted that we did not have the time and resources to reproduce the UniRep model exactly, nor to reproduce the performance and results obtained by the original UniRep. This study of UniRep should mostly be viewed as a way to attain a deeper understanding of the underlying model, including the technical details of the implementation and the challenges around large-scale model training.
+It should be noted that we did not have the time and resources to reproduce the UniRep model exactly, nor to reproduce the performance and results obtained by the original UniRep. This study of UniRep should mostly be viewed as a way to attain a deeper understanding of the underlying model, including the technical details of the implementation, the challenges around large-scale model training and the effect of different hyper-parameters on the model's performance.
 
 \subsection{Method}
 Here we explain the technical details of our efforts to reimplement the UniRep model.
 
 \subsubsection{Choice of framework}
-The original UniRep model is implemented in TensorFlow version 1.3, a somewhat outdated version of the popular TensorFlow machine learning framework for Python, developed by Google. Despite UniRep originally being implemented in Tensorflow, we opted to reimplement it in PyTorch, a similar machine learning framework also made for Python and developed by Facebook. We considered the following factors when choosing PyTorch:
+The original UniRep model is implemented in TensorFlow version 1.3, a somewhat outdated version of the popular TensorFlow machine learning framework for Python, developed by Google. Despite UniRep originally being implemented in Tensorflow, we opted to reimplement it in PyTorch \cite{NEURIPS2019_9015}, a similar machine learning framework also made for Python and developed by Facebook. We considered the following factors when choosing PyTorch:
 \begin{itemize}
     \item PyTorch was recommended to us by our supervisor.
     \item By not using the same framework, we would ensure we did not simply copy the original UniRep model's implementation.
@@ -208,34 +213,37 @@ The original UniRep model is implemented in TensorFlow version 1.3, a somewhat o
 \end{itemize}
 
 \subsubsection{Model architecture}
-We started out by developing a small dummy model using a standard LSTM, since PyTorch does not include an mLSTM out of the box (neither does TensorFlow, for that matter). We quickly reached a model capable of training on predicting the next amino acid in a batch of proteins, though it was too small to actually learn anything. We then tried to implement a custom RNN in PyTorch, the mLSTM. Fortunately, creating custom RNNs in PyTorch is not that difficult and can even be optimized by PyTorch's just-in-time compilation engine \footnote{See \url{https://pytorch.org/blog/optimizing-cuda-rnn-with-torchscript/} for details.}.
+We started out by developing a small dummy model using a standard LSTM, since PyTorch does not include an mLSTM out of the box (neither does TensorFlow, for that matter). We quickly reached a model capable of unsupervised learning on predicting the next amino acid in a batch of proteins, though it was too small to actually learn anything. We then tried to implement a custom RNN in PyTorch, the mLSTM. Fortunately, creating custom RNNs in PyTorch is not that difficult and can even be optimized by PyTorch's just-in-time (JIT) compilation engine \footnote{See \url{https://pytorch.org/blog/optimizing-cuda-rnn-with-torchscript/} for details.}.
 
-We ended up with three different model architectures, each using a different kind of RNN. We examined the GRU, LSTM and the mLSTM RNNs. The GRU and LSTM were trained with a hidden state size of 1024, while the mLSTM was limited to 512 dimensions due to GPU memory constraints (the mLSTM is significantly more memory-hungry than the two others). Our setup for pretraining can be seen in figure \ref{fig:pretrain_arch}.
+Our model architecture can be seen in figure \ref{fig:pretrain_arch}. This figure also includes the unsupervised learning setup (``pretraining'', as it is often called). The model consists of an amino acid embedding layer, which converts each index given to an amino acid to a 10-dimensional vector (this is the same as what the UniRep authors did). The resulting sequence of vectors is sent through a single-layered RNN of some form (see section \ref{section:hyperparam}). The output of the RNN are then sent through a linear layer, giving a score to each of the amino acids, which is used to predict the next amino acid in the sequence.
 
 \todo{PRETRAIN ARCH FIGURE}
 
 \subsubsection{Data}
-For data, we downloaded the UniRef50 dataset \cite{uniprot}, the same dataset that the UniRep authors used. However, from the time between UniRep's training and our reimplementation, the UniRef50 dataset had grown from around 27 million proteins to 39 million proteins. At first, we did not consider this a problem, since we had developed a streaming dataloader which did not need to hold the entire dataset in memory (which would obviously be impossible). However, the dataset's size proved to be a problem for model training -- it could take our largest models more than 12 hours to train a single epoch, during which performance would not increase significantly. Further training proved that the dataset was simply too large for our model to learn from.
+For data, we downloaded the UniRef50 dataset \cite{uniprot}, the same dataset that the UniRep authors used. From the time between UniRep's training and our reimplementation, the UniRef50 dataset had grown from around 27 million proteins to 39 million proteins. At first, we did not consider this a problem, since we had developed a streaming dataloader which did not need to hold the entire dataset in memory (which would obviously be impossible). However, the dataset's size proved to be a problem for model training -- it could take our largest models more than 12 hours to train a single epoch, during which performance would not increase significantly. Further training proved that the dataset was simply too large for our model to learn from.
 
-\subsubsection{Training}
-In order to try to combat the lack of training performance of our models, we tried using truncated backpropogation, just as they do in the UniRep paper. This helped our model learn slightly faster, since more gradient updates were made for each protein sequence. Also, the training got simpler, because the gradient only takes into account the operations of the RNN that happened in the truncation window.
+Luckily historical versions of UniRef50 are available and, though the UniRep authors did not say exactly which version they used, we managed to find a UniRef50 version (the 2017/11 version) of a similar size, and we assume this is the dataset they used. Still, 27 million proteins was too much for us to handle, so we sampled 102400 proteins for training and 10240 proteins for validation, uniformly at random from this version of UniRef50 (with no overlap on training and validation, of course).
 
-Despite truncated backpropogation, our model was still not improving significantly while training, or at least improving too slowly. We're not sure why the model was reluctant to learn -- perhaps we simply did not have enough time to train or maybe the model's dimensions were too small for it to learn effectively. We bit the bullet and reduced the size of the training dataset from all the 39 million proteins to a more manageable 102400. Finally we could complete multiple epochs of training within a reasonable time-frame, leading to improved training loss. Especially the LSTM model was capable of achieving a better training loss on predicting the next amino acid than the other two RNNs.
+\subsubsection{Hyper-parameter search}
+\label{section:hyperparam}
+We considered three main hyperparameters for our experiments: the type of recurrent neural network (LSTM, mLSTM and GRU), the dimensionality of the RNNs hidden state (128, 512 and 1024) as well as whether or not to use truncated backpropogation (if yes, with a window of size 256). This gives us 18 different configurations for our model.
+
+\subsubsection{Pretraining}
+As mentioned, we trained with 102400 proteins for training, and another separate set of 10240 proteins for validation. We trained each model until the validation loss did not improve, with a patience of at least 5 epochs. We used a batch size of 1024 for the models using truncated backpropogation and a batch size of 256 for those that did not (for memory reasons). 
+
+% In order to try to combat the lack of training performance of our models, we tried using truncated backpropogation, just as they do in the UniRep paper. This helped our model learn slightly faster, since more gradient updates were made for each protein sequence. Also, the training got simpler, because the gradient only takes into account the operations of the RNN that happened in the truncation window.
+
+% Despite truncated backpropogation, our model still did not improve significantly while training, or at least improved too slowly. We're not sure why the model was reluctant to learn -- perhaps we just simply did not have enough time to train or maybe the model's dimensions were too small for it to learn effectively. We bit the bullet and reduced the size of the training dataset from all the 39 million proteins to a more manageable 102400. Finally we could complete multiple epochs of training within a reasonable time-frame, leading to improved training loss. Especially the LSTM model was capable of achieving a better training loss on predicting the next amino acid than the other two RNNs.
 
 \todo{figure of train loss?}
 
-mlstm
+In order to speed up training, we spent some time adapting our model to distributed multi-GPU training. Thankfully, this is not too difficult using PyTorch's \texttt{DataParallel} module \footnote{See \url{https://pytorch.org/docs/stable/nn.html\#torch.nn.DataParallel} for details.}. This allowed us to train on multiple GPUs in parallel. The pretraining was done on 4 Nvidia Titan X GPUs in parallel for all the models.
 
-truncated backpropogation
-
-training setup
-
-distributed gpu training
+\subsubsection{Fine-tuning to TAPE tasks}
+We loaded the pretrained models into the TAPE tasks, and trained on each task, until no improvement in the validation loss occurred, with a patience of 10 epochs. The training on the TAPE tasks was done on a single Nvidia Titan X GPU for all the models. Then each model was evaluated on the test split of the TAPE dataset for that task (or the ``ts115'' split for secondary structure).
 
 \subsection{Results}
-... figures 1a 1b 1c ...
-
-TAPE downstream tasks
+The original UniRep paper makes various inquiries into the produced representations in order to determine its quality. Three of them are (1) how well did the model learn to embed the amino acids, (2) how well does the representations discern proteomes and (3) how well are protein representations separated in terms of their structural classification (SCOP). These correspond to Fig. 2a-c in the UniRep paper \cite{alley2019unified}. We have reproduced these three figures using our implementation.
 
 \subsubsection{Amino Acid Embeddings}
 
@@ -278,9 +286,51 @@ TAPE downstream tasks
     \label{fig:fig2c_GRU}
 \end{figure}
 
-\todo{make figure 2 c LSTM}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/fig2c_LSTM.pdf}
+    \caption{Caption}
+    \label{fig:fig2c_LSTM}
+\end{figure}
 
 \subsubsection{TAPE Tasks}
+In addition to the above figures, we also produced numerical results, by running our models on the TAPE tasks, described earlier in \ref{section:tape}. The results can be seen in table \ref{table:tape_results}
+
+\begin{table}[ht]
+\ra{1.5}
+\begin{tabularx}{\textwidth}{llllcccc}
+\toprule
+\textbf{Name} & \textbf{RNN} & \textbf{Size} & \textbf{TBP?} & \textbf{Sec. Str.} & \textbf{Remote Homo.} & \textbf{Fluor.} & \textbf{Stab.} \\ \hline
+UniRep     & mLSTM & 1900 & Yes  & 0.73      & 0.23         & 0.67   & 0.73  \\
+LSTM1024   & LSTM  & 1024 & No   & 0.718     &              &        &       \\
+mLSTM1024  & mLSTM & 1024 & No   &           &              &        &       \\
+GRU1024    & GRU   & 1024 & No   &           &              &        &       \\
+LSTM512    & LSTM  & 512  & No   &           &              &        &       \\
+mLSTM512   & mLSTM & 512  & No   &           &              &        &       \\
+GRU512     & GRU   & 512  & No   &           &              &        &       \\
+LSTM128    & LSTM  & 128  & No   &           &              &        &       \\
+mLSTM128   & mLSTM & 128  & No   &           &              &        &       \\
+GRU128     & GRU   & 128  & No   &           &              &        &       \\
+LSTM1024T  & LSTM  & 1024 & Yes  & 0.709     &              &        & 0.700 \\
+mLSTM1024T & mLSTM & 1024 & Yes  &           &              &        &       \\
+GRU1024T   & GRU   & 1024 & Yes  &           &              &        &       \\
+LSTM512T   & LSTM  & 512  & Yes  &           &              &        &       \\
+mLSTM512T  & mLSTM & 512  & Yes  &           &              &        &       \\
+GRU512T    & GRU   & 512  & Yes  &           &              &        &       \\
+LSTM128T   & LSTM  & 128  & Yes  &           &              &        &       \\
+mLSTM128T  & mLSTM & 128  & Yes  &           &              &        &       \\
+GRU128T    & GRU   & 128  & Yes  &           &              &        &       \\
+\bottomrule
+\end{tabularx}
+\label{table:tape_results}
+\caption{Results}
+\end{table}
+
+Pretrained LSTM Secondary Structure Accuracy: 0.4269795313762456
+
+Pretrained GRU Secondary Structure Accuracy: 0.6762725558847293
+
+Non-pretrained LSTM Secondary Structure Accuracy: 0.6862712092647455
 
 \subsection{Discussion}
 Challenges technical
@@ -294,6 +344,12 @@ hardware challenges
 
 % project description
 % In this work, we wish to reproduce the results of the aforementioned authors, as well as review and critique the methods and design choices they made. We will attempt to evaluate in which aspects their model is strong, and in what aspects it is weak. In addition, we will reflect on alternative approaches, in order to find new ways of tackling the problem. In doing so, we will learn more about (unsupervised) representation learning and protein informatics.
+
+
+% train discussion points
+% - language modelling validation: does it learn? very low accuracies after ~10 epochs
+% - no truncation is (it seems) better than truncation. this makes sense as doing gradient on entire sequence is more informative than doing it on truncated subsequences, and thus leads to better parameters
+% training on 102400 data points instead of millions
 
 \clearpage
 \section{Conclusion}
