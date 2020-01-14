@@ -213,9 +213,9 @@ The original UniRep model is implemented in TensorFlow version 1.3, a somewhat o
 \end{itemize}
 
 \subsubsection{Model architecture}
-We started out by developing a small dummy model using a standard LSTM, since PyTorch does not include an mLSTM out of the box (neither does TensorFlow, for that matter). We quickly reached a model capable of unsupervised learning on predicting the next amino acid in a batch of proteins, though it was too small to actually learn anything. We then tried to implement a custom RNN in PyTorch, the mLSTM. Fortunately, creating custom RNNs in PyTorch is not that difficult and can even be optimized by PyTorch's just-in-time (JIT) compilation engine \footnote{See \url{https://pytorch.org/blog/optimizing-cuda-rnn-with-torchscript/} for details.}.
+We started out by developing a small dummy model using a standard LSTM, since PyTorch does not include an mLSTM out of the box (neither does TensorFlow, for that matter). We quickly reached a model capable of unsupervised learning on predicting the next amino acid in a batch of proteins, though it was too small to actually learn anything. We then tried to implement a custom RNN in PyTorch, the mLSTM. Fortunately, creating custom RNNs in PyTorch is possible and they can even be optimized by PyTorch's just-in-time (JIT) compilation engine \footnote{See \url{https://pytorch.org/blog/optimizing-cuda-rnn-with-torchscript/} for details.}.
 
-Our model architecture can be seen in figure \ref{fig:pretrain_arch}. This figure also includes the unsupervised learning setup (``pretraining'', as it is often called). The model consists of an amino acid embedding layer, which converts each index given to an amino acid to a 10-dimensional vector (this is the same as what the UniRep authors did). The resulting sequence of vectors is sent through a single-layered RNN of some form (see section \ref{section:hyperparam}). The output of the RNN are then sent through a linear layer, giving a score to each of the amino acids, which is used to predict the next amino acid in the sequence.
+Our model architecture can be seen in figure \ref{fig:pretrain_arch}. This figure also includes the unsupervised learning setup (``pretraining'', as it is often called). The model consists of an amino acid embedding layer, which converts each index given to an amino acid to a 10-dimensional vector (this is the same as what the UniRep authors did). The resulting sequence of vectors is sent through a single-layered RNN of some form (see section \ref{section:hyperparam}). The output of the RNN is then sent through a linear layer, giving a score to each of the amino acids, which is used to predict the next amino acid in the sequence.
 
 \begin{figure}
     \centering
@@ -223,6 +223,8 @@ Our model architecture can be seen in figure \ref{fig:pretrain_arch}. This figur
     \caption{Architecture of the model for the unsupervised pretraining. B is batch size, L is the length of the longest protein sequence in the batch, H is the size of the hidden state of the RNN and $\text{l}_n$ is the length of the $n$th protein in the batch. The output size of the linear layer (26) comes from the number of valid amino acids plus some extra utility tokens. Note that the top and bottom layer (the amino acids) in the diagram are equal, except the top is shifted one to the left.}
     \label{fig:pretrain_arch}
 \end{figure}
+
+In contrast to the original UniRep, we did not use weight normalization on the RNN, mostly for technical and pragmatic reasons. Using weight normalization in PyTorch at the same time as multi-GPU training (see section \ref{section:pretraining}) turned out to be technically difficult, due to the way PyTorch duplicates the model on each GPU. In addition, weight normalization made the models significantly slower to run, slowing down training.
 
 \subsubsection{Data}
 For data, we downloaded the UniRef50 dataset \cite{uniprot}, the same dataset that the UniRep authors used. From the time between UniRep's training and our reimplementation, the UniRef50 dataset had grown from around 27 million proteins to 39 million proteins. At first, we did not consider this a problem, since we had developed a streaming dataloader which did not need to hold the entire dataset in memory (which would obviously be impossible). However, the dataset's size proved to be a problem for model training -- it could take our largest models more than 12 hours to train a single epoch, during which performance would not increase significantly. Further training proved that the dataset was simply too large for our model to learn from.
@@ -234,6 +236,7 @@ Luckily historical versions of UniRef50 are available and, though the UniRep aut
 We considered three main hyperparameters for our experiments: the type of recurrent neural network (LSTM, mLSTM and GRU), the dimensionality of the RNNs hidden state (128, 512 and 1024) as well as whether or not to use truncated backpropogation (if yes, with a window of size 256). This gives us 18 different configurations for our model.
 
 \subsubsection{Pretraining}
+\label{section:pretraining}
 As mentioned, we trained with 102400 proteins for training, and another separate set of 10240 proteins for validation. We trained each model until the validation loss did not improve, with a patience of 20 epochs. We used a batch size of 1024 for the models using truncated backpropogation and a batch size of 256 for those that did not (for memory reasons). 
 
 % In order to try to combat the lack of training performance of our models, we tried using truncated backpropogation, just as they do in the UniRep paper. This helped our model learn slightly faster, since more gradient updates were made for each protein sequence. Also, the training got simpler, because the gradient only takes into account the operations of the RNN that happened in the truncation window.
@@ -244,16 +247,17 @@ In order to speed up training, we spent some time adapting our model to distribu
 
 Most of the models reached their peak validation performance in less than 20 epochs, though a few required a lot more epochs (notably, the GRU128T model required more than 200 epochs of very, very slight improvements before encountering 20 epochs in a row with no performance gain). Most models did not stray very far from the initial validation loss from the first epoch -- a typical improvement over the entire training was from around 3.0 validation loss to somewhere around 2.8 validation loss. Figure \ref{fig:lstm_train_performance} and \ref{fig:gru_train_performance} show the training and validation losses of the LSTM1024T and GRU1024T models respectively, for each epoch of training.
 
-\begin{minipage}{\textwidth}
+\begin{minipage}{\linewidth}
 	\centering
-	\begin{minipage}{0.5\linewidth}
+	\begin{minipage}{0.48\linewidth}
 		\begin{figure}[H]
 			\includegraphics[width=\linewidth]{figures/LSTM1024T_Training_Performance.pdf}
 			\caption{Training and validation loss of LSTM1024T.}
 			\label{fig:lstm_train_performance}
 		\end{figure}
-	\end{minipage}%
-	\begin{minipage}{0.5\linewidth}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.48\linewidth}
 		\begin{figure}[H]
 			\includegraphics[width=\linewidth]{figures/GRU1024T_Training_Performance.pdf}
 			\caption{Training and validation loss of GRU1024T.}
@@ -272,14 +276,14 @@ The original UniRep paper makes various inquiries into the produced representati
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2a_LSTM.pdf}
+    \includegraphics[width=0.8\linewidth]{figures/fig2a_LSTM.pdf}
     \caption{Caption}
     \label{fig:fig2a_LSTM}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2a_GRU.pdf}
+    \includegraphics[width=0.8\linewidth]{figures/fig2a_GRU.pdf}
     \caption{Caption}
     \label{fig:fig2a_GRU}
 \end{figure}
@@ -292,14 +296,14 @@ In addition, each proteome is classified according to its taxonomic group. This 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2b_LSTM.pdf}
+    \includegraphics[width=0.8\linewidth]{figures/fig2b_LSTM_1024_no_trunc.pdf}
     \caption{Caption}
     \label{fig:fig2b_LSTM}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2b_GRU_1024_no_trunc.pdf}
+    \includegraphics[width=0.8\linewidth]{figures/fig2b_GRU_1024_no_trunc.pdf}
     \caption{Representations of 9 proteome domains, separated by color. The representations are modelled with a GRU network of 1024 hidden size. The embeddings are projected onto the plane using t-SNE.}
     \label{fig:fig2b_GRU}
 \end{figure}
@@ -308,14 +312,14 @@ In addition, each proteome is classified according to its taxonomic group. This 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2c_GRU.pdf}
+    \includegraphics[width=0.8\textwidth]{figures/fig2c_GRU_1024_no_trunc.pdf}
     \caption{Caption}
     \label{fig:fig2c_GRU}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2c_LSTM.pdf}
+    \includegraphics[width=0.8\textwidth]{figures/fig2c_LSTM_1024_no_trunc.pdf}
     \caption{Caption}
     \label{fig:fig2c_LSTM}
 \end{figure}
@@ -324,13 +328,13 @@ In addition, each proteome is classified according to its taxonomic group. This 
 In addition to the above figures, we also produced numerical results, by running our models on 4 out of the 5 TAPE tasks, described earlier in \ref{section:tape}. The results can be seen in table \ref{table:taperesults}.
 
 % Exact performance for below 0.6915903582009157
-We also tried running a single model (the 1024-size LSTM) on the secondary structure task without pretraining. This model achieved a performance of 0.692, which is quite close to the results displayed in table \ref{table:taperesults}. This suggests that TAPE's training on a specific task is sufficient to achieve good results, and that pretraining beforehand is not crucial for the performance of the models.
+We also tried running a single model (the 1024-size LSTM) on the secondary structure task without pretraining. This model achieved a performance of 0.692, which is quite close to the results displayed in table \ref{table:taperesults}. This suggests that TAPE's training on a specific task is sufficient to achieve good results. Pretraining is thus not crucial for the performance of the models, though it does improve the model slightly.
 
-We did not achieve results for the contact prediction task, due to memory constraints.
+We did not achieve results for the contact prediction task, due to memory constraints. As far as we understand, training on contact prediction involves a square memory cost, due to each amino acids having to be compared to each other amino acid. This is simply too much for the amount of GPU memory we have available.
 
 \begin{table}[ht]
-\ra{1.5}
-\begin{tabularx}{\linewidth}{llllllll}
+\ra{1.4}
+\begin{tabularx}{\linewidth}{Llllllll}
 \toprule
 \textbf{Name} & \textbf{RNN} & \textbf{Size} & \textbf{TBP?} & \textbf{Sec. Str.} & \textbf{R. Homology} & \textbf{Fluor.} & \textbf{Stab.} \\ \hline
 UniRep     & mLSTM & 1900 & Yes  & 0.73      & 0.23         & 0.67   & 0.73  \\
@@ -353,22 +357,24 @@ LSTM128T   & LSTM  & 128  & Yes  &           &              &        &       \\
 mLSTM128T  & mLSTM & 128  & Yes  &           &              &        &       \\
 GRU128T    & GRU   & 128  & Yes  &           &              &        &       \\ \bottomrule
 \end{tabularx}
-\caption{Results for 4 of the 5 TAPE tasks. The metric for secondary structure and remote homology is accuracy; for fluorescence and stability it is Spearman's $\rho$. The results for the UniRep model was taken from \url{https://github.com/songlab-cal/tape}.}
+\caption{Results for 4 of the 5 TAPE tasks. For convenience, each model was given a short-hand name. The table indicates the type of RNN used and the size of the RNN's hidden state. It also indicates whether or not truncated back-propogation (TBP) was used during pretraining. The metric for secondary structure and remote homology is accuracy; for fluorescence and stability it is Spearman's $\rho$. In either case, higher is better. The results for the UniRep model was taken from \url{https://github.com/songlab-cal/tape} -- we did not run the UniRep model ourselves.}
 \label{table:taperesults}
 \end{table}
 
-Pretrained LSTM Secondary Structure Accuracy: 0.4269795313762456
-
-Pretrained GRU Secondary Structure Accuracy: 0.6762725558847293
-
-Non-pretrained LSTM Secondary Structure Accuracy: 0.6862712092647455
-
 \subsection{Discussion}
-Challenges technical
+During our efforts to reimplement the UniRep model, we ran into multiple challenges.
 
-mlstm challenges
+The implementation of the custom mLSTM presented both a theoretical and technical challenge. Firstly, we had to understand the theory behind the mLSTM and the operations it performed. Secondly, we had to actually implement the mLSTM in a PyTorch-compliant manner. This was not trivial, and the resulting RNN was significantly slower and more memory-hungry than a regular LSTM. Still, we opted not to use the JIT capabilities of PyTorch since the speedup was not significant and the errors were harder to debug.
 
-hardware challenges
+We note that it is much easier to work with existing implementations of neural network layers (like the LSTM and GRU RNNs) in established frameworks like PyTorch, rather than implement custom, novel layers. This ease of use and experimentation might have an influence on which models are explored, and which are not -- for example, in this work we only considered one custom RNN, despite a huge number of variants on LSTMs existing. The implementation of ``non-standard'' layers (like the mLSTM) in major frameworks could increase the exposure of other types of models and possibly lead to more varied architecture exploration, ultimately leading to better models.
+
+The size of the largest models (especially mLSTM1024) presented a practical challenge, in that training and using such huge models is slow and often full of memory allocation errors. The hardware requirements for such models also make them difficult to reproduce -- for instance, we did not even attempt to reproduce the 1900 RNN hidden state size that the UniRep authors used. We were fortunate enough to be granted access to our institute's compute cluster. This reimplementation project would have been entirely impossible without the hardware provided by this .
+
+As it turns out, making huge models seems not to be entirely necessary anyway. As table \ref{table:taperesults} shows, similar performance can also be obtained by much smaller models (though larger models still perform marginally better).
+
+hardware cluster
+
+environemt
 
 \clearpage
 \section{Discussion}
@@ -390,6 +396,7 @@ hardware challenges
 
 % References
 \clearpage
+\addcontentsline{toc}{section}{References}
 \printbibliography[title={References}]
 
 \end{document}
