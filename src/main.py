@@ -163,6 +163,9 @@ for e in range(saved_epoch, config.epochs):
             loss = criterion(pred, true)
             val_loss += loss.item()
             val_loss_count += 1
+            mask = mask.to(bool)
+            pred = pred[mask]
+            true = true[mask]
             accuracy = (pred.argmax(dim = 1) == true).to(dtype = float).mean()
     model.train()
 

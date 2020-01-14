@@ -1,7 +1,20 @@
-## TODO
-- [ ] Visualize PCA (figure 2 a).
-- [ ] Visualize t-SNE (figure 2 b).
-- [ ] Visualize t-SNE. (figure 2 c).
+## What remains
+- [ ] mLSTM Visualize PCA (figure 2 a).
+- [ ] mLSTM Visualize t-SNE (figure 2 b).
+- [ ] mLSTM Visualize t-SNE. (figure 2 c).
+- [ ] TAPE table results
+- [ ] Write conclusion
+- [ ] Write discussion
+- [ ] Write results section: amino acids embedding
+- [ ] Write results section: proteomes
+- [ ] Write results section: SCOPe
+- [ ] Write results section: TAPE ablation
+- [ ] Write conclusion section
+- [ ] review background section
+- [ ] review unirep model section
+- [ ] review reproduction section
+- [ ] review conclusion
+- [ ] .. complete this list
 
 # unirep_project
 Repository for project out of course scope on Unirep article.
