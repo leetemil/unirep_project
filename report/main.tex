@@ -319,7 +319,7 @@ In addition, each proteome is classified according to its taxonomic group. This 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{figures/fig2c_LSTM.pdf}
+    \includegraphics[width=0.8\textwidth]{figures/fig2c_LSTM_1024_no_trunc.pdf}
     \caption{Caption}
     \label{fig:fig2c_LSTM}
 \end{figure}
@@ -333,8 +333,8 @@ We also tried running a single model (the 1024-size LSTM) on the secondary struc
 We did not achieve results for the contact prediction task, due to memory constraints. As far as we understand, training on contact prediction involves a square memory cost, due to each amino acids having to be compared to each other amino acid. This is simply too much for the amount of GPU memory we have available.
 
 \begin{table}[ht]
-\ra{1.5}
-\begin{tabularx}{\linewidth}{llllllll}
+\ra{1.4}
+\begin{tabularx}{\linewidth}{Llllllll}
 \toprule
 \textbf{Name} & \textbf{RNN} & \textbf{Size} & \textbf{TBP?} & \textbf{Sec. Str.} & \textbf{R. Homology} & \textbf{Fluor.} & \textbf{Stab.} \\ \hline
 UniRep     & mLSTM & 1900 & Yes  & 0.73      & 0.23         & 0.67   & 0.73  \\
@@ -357,7 +357,7 @@ LSTM128T   & LSTM  & 128  & Yes  &           &              &        &       \\
 mLSTM128T  & mLSTM & 128  & Yes  &           &              &        &       \\
 GRU128T    & GRU   & 128  & Yes  &           &              &        &       \\ \bottomrule
 \end{tabularx}
-\caption{Results for 4 of the 5 TAPE tasks. For convenience, each model was given a short-hand name. The table indicates the type of RNN used and the size of the RNN's hidden state. It also indicates whether or not truncated back-propogation (TBP) was used during pretraining. The metric for secondary structure and remote homology is accuracy; for fluorescence and stability it is Spearman's $\rho$. The results for the UniRep model was taken from \url{https://github.com/songlab-cal/tape} -- we did not run the UniRep model ourselves.}
+\caption{Results for 4 of the 5 TAPE tasks. For convenience, each model was given a short-hand name. The table indicates the type of RNN used and the size of the RNN's hidden state. It also indicates whether or not truncated back-propogation (TBP) was used during pretraining. The metric for secondary structure and remote homology is accuracy; for fluorescence and stability it is Spearman's $\rho$. In either case, higher is better. The results for the UniRep model was taken from \url{https://github.com/songlab-cal/tape} -- we did not run the UniRep model ourselves.}
 \label{table:taperesults}
 \end{table}
 
@@ -368,7 +368,9 @@ The implementation of the custom mLSTM presented both a theoretical and technica
 
 We note that it is much easier to work with existing implementations of neural network layers (like the LSTM and GRU RNNs) in established frameworks like PyTorch, rather than implement custom, novel layers. This ease of use and experimentation might have an influence on which models are explored, and which are not -- for example, in this work we only considered one custom RNN, despite a huge number of variants on LSTMs existing. The implementation of ``non-standard'' layers (like the mLSTM) in major frameworks could increase the exposure of other types of models and possibly lead to more varied architecture exploration, ultimately leading to better models.
 
-The size of the largest models (especially mLSTM1024) presented a practical challenge, in that training and using such huge models is slow and often full of memory allocation errors. The hardware requirements for such models also make them difficult to reproduce -- for instance, we did not even attempt to reproduce the 1900 RNN hidden state size that the UniRep authors used. As it turns out, this seems not to be necessary anyway. As table \ref{table:taperesults} shows, similar performance can also be obtained by much smaller models (though larger models still perform marginally better).
+The size of the largest models (especially mLSTM1024) presented a practical challenge, in that training and using such huge models is slow and often full of memory allocation errors. The hardware requirements for such models also make them difficult to reproduce -- for instance, we did not even attempt to reproduce the 1900 RNN hidden state size that the UniRep authors used. We were fortunate enough to be granted access to our institute's compute cluster. This reimplementation project would have been entirely impossible without the hardware provided by this .
+
+As it turns out, making huge models seems not to be entirely necessary anyway. As table \ref{table:taperesults} shows, similar performance can also be obtained by much smaller models (though larger models still perform marginally better).
 
 hardware cluster
 
@@ -394,6 +396,7 @@ environemt
 
 % References
 \clearpage
+\addcontentsline{toc}{section}{References}
 \printbibliography[title={References}]
 
 \end{document}
