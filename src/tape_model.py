@@ -49,7 +49,7 @@ class UniRepReimpModel(UniRepReimpAbstractModel):
             out, state = self.inner_model.rnn(embed)
 
         if self.inner_model.rnn_type != "GRU":
-            state = (state[0].squeeze(), state[1].squeeze())
+            state = (state[0].squeeze(0), state[1].squeeze(0))
             pooled_out = torch.cat(state, 1)
         else:
             pooled_out = state.squeeze()
