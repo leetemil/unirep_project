@@ -147,6 +147,8 @@ for e in range(saved_epoch, config.epochs):
     with torch.no_grad():
         val_loss = 0
         val_loss_count = 0
+        correct = 0
+        count = 0
         for xb in validation_protein_dataloader:
             mask = (xb != PADDING_VALUE).to(dtype = torch.long)
 
@@ -160,16 +162,18 @@ for e in range(saved_epoch, config.epochs):
             # Flatten the sequence dimension to compare each timestep in cross entropy loss
             pred = pred.flatten(0, 1)
             true = true.flatten()
+            mask = mask.flatten().to(bool)
             loss = criterion(pred, true)
             val_loss += loss.item()
             val_loss_count += 1
-            mask = mask.to(bool)
             pred = pred[mask]
             true = true[mask]
-            accuracy = (pred.argmax(dim = 1) == true).to(dtype = float).mean()
+            count += pred.size(0)
+            correct += (pred.argmax(dim = 1) == true).item()
+        accuracy = correct / count
+        avg_val_loss = val_loss / val_loss_count
     model.train()
 
-    avg_val_loss = val_loss / val_loss_count
     if not config.save_path.is_dir() and avg_val_loss <= best_val_loss:
         print(f"Model improved from {best_val_loss:5.3f} to {avg_val_loss:5.3f}! Saving model...")
         best_val_loss = avg_val_loss
