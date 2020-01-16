@@ -301,6 +301,14 @@ In order to assess the representations, the model embeddings of the 20 amino aci
     \label{fig:fig2a_GRU}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig2a_mLSTM_1024_no_trunc.pdf}
+    \caption{The three most principal components of the amino acid embeddings produced by the mLSTM1024 model.}
+    \label{fig:fig2a_mLSTM}
+\end{figure}
+
+
 The amino acid embedding produced by the full UniRep model seem to clearly separate the hydrophobic amino acids, while the remaining is less separated. Our LSTM-based reimplementation yield a similar result, but otherwise the reproduced amino acid embeddings seem to degrade, presumably due to some of our constraints (time, data size, model architecture). \todo{include mLSTM?}
 
 \subsubsection{Proteome Representations}
@@ -323,38 +331,107 @@ In addition, each proteome is classified according to its taxonomic group. This 
     \label{fig:fig2b_GRU}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/fig2b_mLSTM_1024_no_trunc.pdf}
+    \caption{Representations of 9 proteome domains, separated by color. The representations are modeled with a mLSTM network of 1024 hidden size. The embeddings are projected onto the plane using t-SNE with perplexity 12.}
+    \label{fig:fig2b_mLSTM}
+\end{figure}
+
 Both (\todo{three? mLSTM}) figures show that the models are capable of making representations that cluster groups together. There are two major clusters: Mammals, animalia, plantae, eukarya and fungi are clustered together, separate from bacteria, virus, cyanobacteria and archaea. This separation is expected as it denotes the eukaryote and procaryote organisms. These figures are very similar to the results in the UniRep paper, indicating that the representations are sufficiently informed to do this well. Another explanation could be that the proteins within a proteome are sufficiently similar that their mean representations simply end up close to each other, regardless of the learned model. The representation is important, but there might be a tendency to see such grouping by the proteomes' proteins inherent similarity alone.
 
 \subsubsection{SCOPe Secondary Structure Representations}
 \label{section:SCOPe}
-These results inspect the representations ability to separate proteins by their SCOPe classes (alphas, betas, small, etc.). A low dimensional t-SNE tranformation is applied to the protein representations to cast them into two dimensions. Then, a kernel density estimation is made over all proteins of a single class and shown with a contour plot. The results can be seen in figures \ref{fig:fig2c_LSTM} and \ref{fig:fig2c_GRU}.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{figures/fig2c_LSTM_1024_no_trunc.pdf}
-    \caption{SCOPe class contours made from LSTM-based protein representations cast to two dimensions using t-SNE.}
-    \label{fig:fig2c_LSTM}
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{figures/fig2c_GRU_1024_no_trunc.pdf}
-    \caption{SCOPe class contours made from GRU-based protein representations cast to two dimensions using t-SNE.}
-    \label{fig:fig2c_GRU}
-\end{figure}
+These results inspect the representations ability to separate proteins by their SCOPe classes (alphas, betas, small, etc.). A low dimensional t-SNE tranformation is applied to the protein representations to cast them into two dimensions. Then, a kernel density estimation is made over all proteins of a single class and shown with a contour plot. The results can be seen in figures \ref{fig:LSTM_pca_compare}-\ref{fig:mLSTM_tSNE_compare}.
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/fig2c_LSTM_1024_no_trunc.pdf}
+%     \caption{SCOPe class contours made from LSTM-based protein representations cast to two dimensions using t-SNE.}
+%     \label{fig:fig2c_LSTM}
+% \end{figure}
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/fig2c_GRU_1024_no_trunc.pdf}
+%     \caption{SCOPe class contours made from GRU-based protein representations cast to two dimensions using t-SNE.}
+%     \label{fig:fig2c_GRU}
+% \end{figure}
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/fig2c_mLSTM_1024_no_trunc.pdf}
+%     \caption{SCOPe class contours made from mLSTM-based protein representations cast to two dimensions using t-SNE.}
+%     \label{fig:fig2c_mLSTM}
+% \end{figure}
 
-\todo{PCA plots}
+\begin{minipage}{\linewidth}
+	\centering
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_LSTM_1024_no_trunc_PCA.pdf}
+			\caption{Principal Component Analysis of LSTM SCOPe representations.}
+			\label{fig:LSTM_pca_compare}
+		\end{figure}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_LSTM_1024_no_trunc.pdf}
+			\caption{t-SNE of LSTM SCOPe representations.}
+			\label{fig:LSTM_tSNE_compare}
+		\end{figure}
+	\end{minipage}
+\end{minipage}
 
-\todo{mLSTM plots}
+\begin{minipage}{\linewidth}
+	\centering
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_GRU_1024_no_trunc_PCA.pdf}
+			\caption{Principal Component Analysis of GRU SCOPe representations.}
+			\label{fig:GRU_pca_compare}
+		\end{figure}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_GRU_1024_no_trunc.pdf}
+			\caption{t-SNE of GRU SCOPe representations.}
+			\label{fig:GRU_tSNE_compare}
+		\end{figure}
+	\end{minipage}
+\end{minipage}
+
+\begin{minipage}{\linewidth}
+	\centering
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_mLSTM_1024_no_trunc_PCA.pdf}
+			\caption{Principal Component Analysis of mLSTM SCOPe representations.}
+			\label{fig:mLSTM_pca_compare}
+		\end{figure}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.48\linewidth}
+		\begin{figure}[H]
+			\includegraphics[width=\linewidth]{figures/fig2c_mLSTM_1024_no_trunc.pdf}
+			\caption{t-SNE of mLSTM SCOPe representations.}
+			\label{fig:mLSTM_tSNE_compare}
+		\end{figure}
+	\end{minipage}
+\end{minipage}
 
 \subsubsection{TAPE Tasks}
 \label{section:TAPE_results}
-In addition to the above figures, we also produced numerical results, by running our models on 4 out of the 5 TAPE tasks, described earlier in \ref{section:tape}. The results can be seen in table \ref{table:taperesults}.
+In addition to the above figures, we also produced numerical results, by running our models on 4 out of the 5 TAPE tasks, described earlier in \ref{section:tape}. The results for each model can be seen in table \ref{table:taperesults}.
 
 % Exact performance for below 0.6915903582009157
-We also tried running a single model (the 1024-size LSTM) on the secondary structure task without pretraining. This model achieved a performance of 0.692, which is quite close to the results displayed in table \ref{table:taperesults}. This suggests that TAPE's training on a specific task is sufficient to achieve good results. Pretraining is thus not crucial for the performance of the models, though it does improve the model slightly.
+We also tried running a single model (the 1024-size LSTM) on the secondary structure task without pretraining. This model achieved a performance of 0.692, which is quite close to the results displayed in table \ref{table:taperesults}. This suggests that TAPE's training on a specific task is sufficient to achieve good results. Pretraining is thus not crucial for the performance of the models, though it does improve the model slightly. We suspect that the effect of pretraining would be more pronounced if TAPE did not train the underlying model, but only the classifier on top.
 
 We did not achieve results for the contact prediction task, due to memory constraints. As far as we understand, training on contact prediction involves a square memory cost, due to each amino acids having to be compared to each other amino acid. This is simply too much for the amount of GPU memory we have available.
 
-\begin{table}[ht]
+Table \ref{table:taperesults_mean} shows a mean of the performance on each task for the different choices of hyperparameters, as well as a total mean over all t
+
+\begin{table}[H]
+\centering
 \ra{1.4}
 \begin{tabularx}{\linewidth}{Llllllll}
 \toprule
@@ -383,6 +460,26 @@ GRU128T    & GRU   & 128  & Yes  & 0.700  & 0.109 & 0.662 & 0.712 \\ \bottomrule
 \label{table:taperesults}
 \end{table}
 
+\begin{table}[H]
+\centering
+\ra{1.4}
+\begin{tabularx}{\linewidth}{Llllll}
+\toprule
+\textbf{Model Group} & \textbf{Sec. Str.} & \textbf{R. Homology} & \textbf{Fluor.} & \textbf{Stab.} & \textbf{Mean} \\ \hline
+UniRep        & 0.73   & 0.23  & 0.67  & 0.73  & Mean \\
+LSTMs         & 0.718  & 0.125 & 0.679 & 0.676 & Mean \\
+mLSTMs        &        &       &       &       & Mean \\
+GRU           & 0.703  & 0.148 & 0.675 & 0.736 & Mean \\
+1024s         & 0.711  & 0.153 & 0.675 & 0.703 & Mean \\
+512s          &        &       &       &       & Mean \\
+128s          & 0.709  & 0.128 & 0.672 & 0.708 & Mean \\
+Truncated     & 0.714  & 0.114 & 0.668 & 0.744 & Mean \\
+Non-truncated &        &       &       &       & Mean \\ \bottomrule
+\end{tabularx}
+\caption{Mean results of table \ref{table:taperesults}, grouped according to the hyperparameter search for each task. The mean column additionally shows the mean of all the tasks.}
+\label{table:taperesults_mean}
+\end{table}
+
 \subsection{Discussion}
 \label{section:reproduction_challenges}
 During our efforts to reimplement the UniRep model, we ran into multiple challenges.
@@ -403,7 +500,7 @@ Even the amount of data used in the UniRep article seems excessive. We achieved 
 
 \clearpage
 \section{Conclusion}
-In section \ref{section:unirep_reproduction} we have presented the main new work of this project: the architectural reimplementation of the UniRep protein representation model and a subset of core results from the UniRep article \cite{alley2019unified}. In section \ref{section:reproduction_results} we show that it is possible to achieve protein representations that are produced by down-scaled models that yield comparable performance with the full UniRep model. The model learns to construct meaningful amino acid embeddings as seen in \ref{fig:fig2a_LSTM}. Our representations manage to retain information what is sufficiently general across proteins to cluster proteomes and secondary structure, comparable to the UniRep full model (figures \ref{fig:fig2b_LSTM} and \ref{fig:fig2c_LSTM}). These results indicate that the reproduced model is sufficiently capturing the behavior of the UniRep model. 
+In section \ref{section:unirep_reproduction} we have presented the main new work of this project: the architectural reimplementation of the UniRep protein representation model and a subset of core results from the UniRep article \cite{alley2019unified}. In section \ref{section:reproduction_results} we show that it is possible to achieve protein representations that are produced by down-scaled models that yield comparable performance with the full UniRep model. The model learns to construct meaningful amino acid embeddings as seen in \ref{fig:fig2a_LSTM}. Our representations manage to retain information what is sufficiently general across proteins to cluster proteomes and secondary structure, comparable to the UniRep full model (figures \ref{fig:fig2b_LSTM} and \ref{fig:LSTM_tSNE_compare}). These results indicate that the reproduced model is sufficiently capturing the behavior of the UniRep model. 
 
 In section \ref{section:TAPE_results} an ablation study of various model instances show that it is possible to achieve performance on downstream tasks with several alternative model designs. Size variation show that larger models yield marginally better performance, at the cost of computations and hardware requirements.
 
