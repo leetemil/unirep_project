@@ -7,11 +7,12 @@ from unirep import UniRep
 from datahandling import getProteinDataset, getProteinDataLoader
 from constants import *
 
-device = torch.device("cpu")
+device = torch.device("cuda")
 
-sd = torch.load("mLSTM_1024_no_trunc.best", map_location = device)["model_state_dict"]
+sd = torch.load("mLSTM_512.best", map_location = device)["model_state_dict"]
 
-model = UniRep("mLSTM", 10, 1024, 1)
+model = UniRep("mLSTM", 10, 512, 1)
+model.to(device)
 model.load_state_dict({k.replace("module.", ""): sd[k] for k in sd.keys()})
 
 # Define loss function
@@ -21,7 +22,7 @@ model.eval()
 torch.set_grad_enabled(False)
 
 validation_protein_dataset = getProteinDataset(Path("../data/preprocessed/proteins10240.txt"), device)
-validation_protein_dataloader = getProteinDataLoader(validation_protein_dataset, batch_size = 1024)
+validation_protein_dataloader = getProteinDataLoader(validation_protein_dataset, batch_size = 256)
 
 # Get validation loss and accuracy
 val_loss = 0

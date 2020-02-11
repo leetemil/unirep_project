@@ -169,7 +169,7 @@ for e in range(saved_epoch, config.epochs):
             pred = pred[mask]
             true = true[mask]
             count += pred.size(0)
-            correct += (pred.argmax(dim = 1) == true).item()
+            correct += (pred.argmax(dim = 1) == true).sum().item()
         accuracy = correct / count
         avg_val_loss = val_loss / val_loss_count
     model.train()
